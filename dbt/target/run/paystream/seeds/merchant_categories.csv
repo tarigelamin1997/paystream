@@ -1,0 +1,16 @@
+
+    
+    
+    truncate table `silver`.`merchant_categories`;
+    -- dbt seed --
+    
+  
+  
+
+  
+
+  
+
+
+;
+  

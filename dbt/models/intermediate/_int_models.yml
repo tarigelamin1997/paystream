@@ -1,0 +1,8 @@
+version: 2
+models:
+  - name: int_transaction_enriched
+    description: "Denormalized fact: transaction with user credit tier and merchant category"
+  - name: int_repayment_timeline
+    description: "Full installment lifecycle: scheduled, paid, days overdue"
+  - name: int_user_credit_history
+    description: "All transactions + repayments per user ordered by date"

@@ -1,0 +1,19 @@
+version: 2
+models:
+  - name: stg_transactions
+    description: "Staged transactions — filtered cancelled, standardized types"
+    columns:
+      - name: transaction_id
+        tests:
+          - not_null
+      - name: amount
+        tests:
+          - not_null
+  - name: stg_repayments
+    description: "Staged repayments — latest state via FINAL"
+  - name: stg_users
+    description: "Staged users — latest state via FINAL, PII verified"
+  - name: stg_merchants
+    description: "Staged merchants — latest state via FINAL"
+  - name: stg_app_events
+    description: "Staged app events — JSONExtract known fields"

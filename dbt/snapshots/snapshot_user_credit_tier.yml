@@ -1,0 +1,4 @@
+version: 2
+snapshots:
+  - name: snapshot_user_credit_tier
+    description: "SCD Type 2: User credit tier, limit, and KYC status history. Answers: 'What tier was the user in when this installment plan was created?'"

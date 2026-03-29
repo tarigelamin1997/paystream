@@ -1,0 +1,4 @@
+version: 2
+snapshots:
+  - name: snapshot_merchant_credit_limits
+    description: "SCD Type 2: Merchant credit limit, risk tier, and commission rate history. Answers: 'What limit was active when this transaction was approved?'"

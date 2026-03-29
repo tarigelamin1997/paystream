@@ -1,0 +1,6 @@
+merchant_category,risk_weight,display_name
+electronics,0.8,Electronics
+fashion,0.6,Fashion & Apparel
+groceries,0.3,Groceries
+restaurants,0.5,Restaurants & Food
+travel,0.9,Travel & Tourism

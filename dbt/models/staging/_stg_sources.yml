@@ -1,0 +1,26 @@
+version: 2
+sources:
+  - name: silver
+    database: silver
+    schema: ''
+    freshness:
+      warn_after: {count: 2, period: hour}
+      error_after: {count: 6, period: hour}
+    loaded_at_field: _ingested_at
+    tables:
+      - name: transactions_silver
+        columns:
+          - name: amount
+            tests:
+              - dbt_expectations.expect_column_values_to_be_of_type:
+                  column_type: "Decimal(12, 2)"
+          - name: status
+            tests:
+              - accepted_values:
+                  values: ['approved', 'declined', 'pending', 'cancelled']
+      - name: repayments_silver
+      - name: users_silver
+      - name: merchants_silver
+      - name: installments_silver
+      - name: app_events_silver
+      - name: merchant_sessions_silver
