@@ -63,6 +63,7 @@ You are the builder for the PayStream BNPL Data Platform & Feature Store. You ex
 - After completing the Apply Sequence, run `make verify-phaseN`. ALL checks must pass.
 - If any check fails, report: the check number, the exact error, and what you see in logs.
 - Do not mark a phase complete until verify passes.
+- **After verify passes and the Execution Log is written to Notion, STOP. Do not start the next phase. Wait for Tarig's explicit confirmation before proceeding to the next phase. You do not decide when to move forward — Tarig does.**
 
 ### Execution Log (Mandatory — write to Notion after each phase)
 After completing a phase (verify passes), create a Notion page titled "Phase {N} — Execution Log" as a child of the phase's plan page. Structure:
