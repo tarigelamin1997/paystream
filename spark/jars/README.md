@@ -1,0 +1,1 @@
+The clickhouse-jdbc-0.6.0-all.jar is included via the EMR Serverless `--jars` parameter pointing to `s3://paystream-delta-dev/spark-jars/clickhouse-jdbc-0.6.0-all.jar`. It is not committed to this repository.

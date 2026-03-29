@@ -1,0 +1,85 @@
+# PayStream Feature Store Configuration
+# Referenced by CreditFeatureEngineer Spark job
+
+feature_store:
+  name: user_credit_features
+  version: v2.1.0
+  snapshot_interval_hours: 4
+
+sources:
+  clickhouse:
+    host: ${CLICKHOUSE_HOST}
+    port: 8123
+    read_database: silver
+    write_database: feature_store
+    tables:
+      - transactions_silver
+      - repayments_silver
+      - installments_silver
+
+features:
+  - name: tx_velocity_7d
+    description: "Transaction count in last 7 days"
+    type: ShortType
+    default: 0
+    window_days: 7
+
+  - name: tx_velocity_30d
+    description: "Transaction count in last 30 days"
+    type: ShortType
+    default: 0
+    window_days: 30
+
+  - name: avg_tx_amount_30d
+    description: "Average transaction amount in last 30 days"
+    type: DecimalType(10,2)
+    default: 0.00
+    window_days: 30
+
+  - name: repayment_rate_90d
+    description: "Fraction of repayments paid on time in last 90 days"
+    type: FloatType
+    default: 0.0
+    window_days: 90
+
+  - name: merchant_diversity_30d
+    description: "Distinct merchants in last 30 days"
+    type: ShortType
+    default: 0
+    window_days: 30
+
+  - name: declined_rate_7d
+    description: "Fraction of declined transactions in last 7 days"
+    type: FloatType
+    default: 0.0
+    window_days: 7
+
+  - name: active_installments
+    description: "Count of active installment schedules"
+    type: ShortType
+    default: 0
+
+  - name: days_since_first_tx
+    description: "Days since user's first transaction"
+    type: ShortType
+    default: 0
+
+quality_gate:
+  checks:
+    - name: no_nulls
+      description: "No NULL values in any feature column"
+    - name: velocity_monotonic
+      description: "tx_velocity_30d >= tx_velocity_7d"
+    - name: repayment_rate_range
+      description: "repayment_rate_90d between 0 and 1"
+    - name: valid_temporal
+      description: "valid_to > valid_from"
+
+output:
+  delta_lake:
+    path: s3://paystream-features-dev/user_credit/
+    partition_by: feature_version
+    mode: merge
+  clickhouse:
+    table: user_credit_features
+    mode: append
