@@ -1,0 +1,28 @@
+# PayStream Seed Data Configuration
+postgresql:
+  host: "${RDS_ENDPOINT}"
+  port: 5432
+  database: paystream
+  username: "${RDS_USERNAME}"
+  password: "${RDS_PASSWORD}"
+
+documentdb:
+  host: "${DOCDB_ENDPOINT}"
+  port: 27017
+  database: paystream
+  username: "${DOCDB_USERNAME}"
+  password: "${DOCDB_PASSWORD}"
+  tls_ca_file: /etc/ssl/certs/global-bundle.pem
+
+volumes:
+  users: 50000
+  merchants: 200
+  transactions: 500000
+  repayments: 300000
+  installment_schedules: 125000
+  app_events: 1000000
+  merchant_sessions: 500000
+
+seed:
+  batch_size: 5000
+  random_seed: 42

@@ -1,0 +1,13 @@
+FROM debezium/connect:2.7.0.Final
+
+# Install MSK IAM auth plugin on main classpath (required for SASL callbacks)
+RUN cd /kafka/libs && \
+    curl -sLO https://github.com/aws/aws-msk-iam-auth/releases/download/v2.0.3/aws-msk-iam-auth-2.0.3-all.jar
+
+# Bake DocumentDB TLS certificate bundle and import into Java truststore
+COPY global-bundle.pem /etc/ssl/certs/global-bundle.pem
+COPY import-certs.sh /tmp/import-certs.sh
+USER root
+RUN chmod +x /tmp/import-certs.sh && \
+    /tmp/import-certs.sh /etc/ssl/certs/global-bundle.pem /etc/pki/java/cacerts changeit && \
+    rm /tmp/import-certs.sh

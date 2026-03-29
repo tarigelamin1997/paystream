@@ -1,0 +1,51 @@
+# Terraform
+terraform/.terraform/
+terraform/*.tfstate
+terraform/*.tfstate.backup
+terraform/.terraform.lock.hcl
+terraform/terraform.tfstate.d/
+*.tfplan
+
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.egg-info/
+.eggs/
+dist/
+build/
+venv/
+.venv/
+*.egg
+
+# IDE
+.idea/
+.vscode/
+*.swp
+*.swo
+*~
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Secrets — NEVER commit
+*.pem
+*.key
+.env
+.env.*
+credentials.json
+secrets.yaml
+
+# Docker
+debezium/docker/global-bundle.pem
+
+# Logs
+*.log
+logs/
+
+# Local binaries
+.terraform-bin/
+
+# Claude
+.claude/

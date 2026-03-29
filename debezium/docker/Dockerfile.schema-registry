@@ -1,0 +1,8 @@
+FROM confluentinc/cp-schema-registry:7.6.1
+
+# Install MSK IAM auth plugin on classpath
+USER root
+RUN mkdir -p /usr/share/java/schema-registry && \
+    curl -sLo /usr/share/java/schema-registry/aws-msk-iam-auth-2.0.3-all.jar \
+    https://github.com/aws/aws-msk-iam-auth/releases/download/v2.0.3/aws-msk-iam-auth-2.0.3-all.jar
+USER appuser

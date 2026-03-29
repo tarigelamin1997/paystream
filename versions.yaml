@@ -1,0 +1,14 @@
+# PayStream — Component Versions (single source of truth)
+# Phase 1: Infrastructure + CDC
+terraform: "1.7.5"
+aws_provider: "5.40.0"
+postgresql: "15"
+documentdb: "6.0"
+clickhouse: "24.8"
+kafka: "3.6.0"                # MSK Serverless runs Kafka 3.6
+debezium: "2.7.0"
+schema_registry: "7.6.1"
+spark: "3.5.1"                # EMR Serverless provisioned, not used until Phase 4
+delta_lake: "3.2.0"           # Provisioned, not used until Phase 4
+airflow: "2.10.0"             # MWAA provisioned, not used until Phase 5
+python: "3.12"                # Seed scripts, Lambda (if any), ECS tasks
