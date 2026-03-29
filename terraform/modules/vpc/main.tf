@@ -28,6 +28,23 @@ resource "aws_subnet" "public_1a" {
   }
 }
 
+# Public subnet (eu-north-1b) — ALB requires 2 AZ subnets
+resource "aws_subnet" "public_1b" {
+  vpc_id                  = aws_vpc.main.id
+  cidr_block              = "10.0.2.0/24"
+  availability_zone       = var.az_secondary
+  map_public_ip_on_launch = true
+
+  tags = {
+    Name = "${var.project_name}-public-1b"
+  }
+}
+
+resource "aws_route_table_association" "public_1b" {
+  subnet_id      = aws_subnet.public_1b.id
+  route_table_id = aws_route_table.public.id
+}
+
 # Private subnet (eu-north-1a) — RDS, DocumentDB, MSK, ClickHouse, ECS, EMR
 resource "aws_subnet" "private_1a" {
   vpc_id            = aws_vpc.main.id

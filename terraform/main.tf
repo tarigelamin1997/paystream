@@ -89,6 +89,10 @@ module "ecs" {
   debezium_mongo_role_arn  = module.iam.ecs_debezium_mongo_role_arn
   schema_registry_role_arn = module.iam.ecs_schema_registry_role_arn
   ecs_execution_role_arn   = module.iam.ecs_execution_role_arn
+  # Phase 5 — FastAPI
+  clickhouse_private_ip    = module.clickhouse.private_ip
+  fastapi_task_role_arn    = module.iam.ecs_fastapi_role_arn
+  public_subnet_ids        = module.vpc.public_subnet_ids
 }
 
 module "clickhouse" {

@@ -132,6 +132,28 @@ resource "aws_iam_role" "emr_execution" {
   }
 }
 
+# FastAPI Task Role (Phase 5)
+resource "aws_iam_role" "ecs_fastapi" {
+  name = "${var.project_name}-fastapi-role"
+
+  assume_role_policy = jsonencode({
+    Version = "2012-10-17"
+    Statement = [
+      {
+        Effect = "Allow"
+        Principal = {
+          Service = "ecs-tasks.amazonaws.com"
+        }
+        Action = "sts:AssumeRole"
+      }
+    ]
+  })
+
+  tags = {
+    Name = "${var.project_name}-fastapi-role"
+  }
+}
+
 # MWAA Execution Role
 resource "aws_iam_role" "mwaa_execution" {
   name = "${var.project_name}-mwaa-execution-role"

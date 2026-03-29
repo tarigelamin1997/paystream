@@ -179,7 +179,7 @@ python:               3.12
 9. **dbt `delete+insert` incremental** on SummingMergeTree Gold tables. Prevents double-counting.
 10. **Feature Store dual write.** Delta Lake (audit/backfill) + ClickHouse (serving). Same `(user_id, valid_from)` key.
 11. **FastAPI on ECS Fargate + ALB.** Not Lambda — cold starts break P99 < 50ms SLA.
-12. **Drift metrics to AMP** via sigv4 remote-write. Not ClickHouse — Grafana queries AMP natively. Grafana self-hosted on ClickHouse EC2 (AMG not available in eu-north-1).
+12. **Drift metrics to ClickHouse** `feature_store.drift_metrics` table via HTTP clickhouse_hook. Originally planned for AMP remote-write, but snappy C-extension unavailable in MWAA. AMP still used for FastAPI Prometheus metrics (scraped, not pushed).
 
 ## Naming Conventions
 
@@ -230,7 +230,7 @@ All AWS resources use `paystream-` prefix: `paystream-vpc`, `paystream-rds`, `pa
 | 2 | Silver DDL + MVs, Gold DDL (empty), Feature Store DDL (empty) | Silver tables, Bronze→Silver MVs, Gold table structures, Feature Store table structure | Bronze tables, Gold data, Feature Store data |
 | 3 | dbt project, models, snapshots, macros, tests | Staging models, intermediate views, Gold data (via dbt), SCD Type 2 snapshots, seed tables | Bronze, Silver tables, Feature Store |
 | 4 | Spark jobs, Delta Lake, Feature Store data | CreditFeatureEngineer, feature_store_writer, S3 Delta files, Feature Store rows | Bronze, Silver, Gold, DAGs, dashboards |
-| 5 | FastAPI, Airflow DAGs, MWAA config | ECS FastAPI service + ALB, 7 DAGs, AMP drift metrics, gold.dbt_test_results data | Bronze, Silver DDL, Gold DDL, Feature Store DDL |
+| 5 | FastAPI, Airflow DAGs, MWAA config | ECS FastAPI service + ALB, 7 DAGs, ClickHouse drift_metrics data, gold.dbt_test_results data | Bronze, Silver DDL, Gold DDL, Feature Store DDL |
 | 6 | Grafana dashboards, alerts, stress test, docs | Grafana dashboards + alerts (self-hosted on ClickHouse EC2), stress test results, README, bug log, composite Makefile | All infrastructure and data from Phases 1–5 |
 
 ## What You Must Never Do

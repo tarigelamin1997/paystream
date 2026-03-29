@@ -44,6 +44,17 @@ output "schema_registry_url" {
   value       = module.ecs.schema_registry_url
 }
 
+# FastAPI (Phase 5)
+output "alb_dns_name" {
+  description = "FastAPI ALB DNS name"
+  value       = module.ecs.alb_dns_name
+}
+
+output "fastapi_ecr_url" {
+  description = "FastAPI ECR repository URL"
+  value       = module.ecs.fastapi_ecr_url
+}
+
 # S3
 output "s3_bucket_names" {
   description = "S3 bucket names"

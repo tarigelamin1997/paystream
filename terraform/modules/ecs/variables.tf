@@ -85,3 +85,22 @@ variable "schema_registry_role_arn" {
 variable "ecs_execution_role_arn" {
   type = string
 }
+
+# Phase 5 — FastAPI Feature Store API
+variable "clickhouse_private_ip" {
+  description = "ClickHouse EC2 private IP for FastAPI CLICKHOUSE_HOST env var"
+  type        = string
+  default     = ""
+}
+
+variable "fastapi_task_role_arn" {
+  description = "IAM task role for FastAPI ECS task"
+  type        = string
+  default     = ""
+}
+
+variable "public_subnet_ids" {
+  description = "Public subnet IDs for ALB placement"
+  type        = list(string)
+  default     = []
+}
