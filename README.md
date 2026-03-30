@@ -40,7 +40,7 @@ Built entirely on AWS managed services. Deployed and torn down with a single com
 
 **Orchestration:** MWAA (Airflow 2.10) -- 7 DAGs managing dbt, feature computation, drift detection, and health checks.
 
-**Observability:** Amazon Managed Grafana + Prometheus -- 4 dashboards with alerting.
+**Observability:** Self-hosted Grafana OSS on ClickHouse EC2 (port 3000) + Amazon Managed Prometheus -- 5 dashboards, 5 alert rules.
 
 ---
 
@@ -49,7 +49,7 @@ Built entirely on AWS managed services. Deployed and torn down with a single com
 | Component | Service | Version |
 |---|---|---|
 | Transactional DB | RDS PostgreSQL | 15 |
-| Behavioural DB | Amazon DocumentDB | 6.0 |
+| Behavioural DB | Amazon DocumentDB | 5.0 |
 | Streaming | MSK Provisioned | Kafka 3.6.0 |
 | CDC | Debezium on ECS Fargate | 2.7.0 |
 | Schema Registry | Confluent on ECS Fargate | 7.6.1 |
@@ -59,7 +59,7 @@ Built entirely on AWS managed services. Deployed and torn down with a single com
 | Transformations | dbt-core + dbt-clickhouse | 1.8.0 |
 | Feature API | FastAPI on ECS Fargate + ALB | 0.111.0 |
 | Orchestration | MWAA (Airflow) | 2.10.0 |
-| Monitoring | Amazon Managed Grafana + Prometheus | -- |
+| Monitoring | Self-hosted Grafana OSS + AMP (Prometheus) | 11.0.0 |
 | IaC | Terraform | 1.7.5 |
 | Language | Python | 3.12 |
 
@@ -155,12 +155,14 @@ cd terraform && terraform output
 
 ## Feature Store API
 
-The Feature API serves pre-computed credit risk features with P99 < 50ms.
+The Feature API serves pre-computed credit risk features with **P99 < 6ms** (target: < 50ms).
 
-### Get Features for a User
+**Live endpoint:** `http://paystream-fastapi-alb-1584201898.eu-north-1.elb.amazonaws.com`
+
+### Get Features for a User (real-time)
 
 ```bash
-curl http://localhost:8000/features/5002
+curl http://<ALB_DNS>/features/user/5002
 ```
 
 Response:
@@ -168,28 +170,41 @@ Response:
 ```json
 {
   "user_id": 5002,
-  "tx_velocity_7d": 3,
-  "tx_velocity_30d": 12,
-  "avg_tx_amount_30d": 245.50,
-  "repayment_rate_90d": 0.94,
-  "merchant_diversity_30d": 5,
-  "feature_version": "2026-03-29T00:00:00",
-  "valid_from": "2026-03-29T00:00:00"
+  "as_of": null,
+  "feature_version": "v2.1.0",
+  "latency_ms": 5.11,
+  "features": {
+    "tx_velocity_7d": 6,
+    "tx_velocity_30d": 6,
+    "avg_tx_amount_30d": "1976.27",
+    "repayment_rate_90d": 0.0,
+    "merchant_diversity_30d": 6,
+    "declined_rate_7d": 0.167,
+    "active_installments": 3,
+    "days_since_first_tx": 0
+  }
 }
+```
+
+### Point-in-Time Query (backtesting)
+
+```bash
+curl "http://<ALB_DNS>/features/user/5002?as_of=2299-12-31T23:00:00"
 ```
 
 ### Health Check
 
 ```bash
-curl http://localhost:8000/health
+curl http://<ALB_DNS>/health
+# {"status":"healthy","clickhouse":"ok","version":"v2.1.0"}
 ```
 
-### Batch Lookup
+### Prometheus Metrics
 
 ```bash
-curl -X POST http://localhost:8000/features/batch \
-  -H "Content-Type: application/json" \
-  -d '{"user_ids": [5001, 5002, 5003]}'
+curl http://<ALB_DNS>/metrics
+# paystream_feature_request_latency_seconds_bucket{le="0.01"} 1.0
+# paystream_feature_requests_total{status="ok"} 1.0
 ```
 
 ---
@@ -201,7 +216,7 @@ curl -X POST http://localhost:8000/features/batch \
 | Bronze | `bronze` | Kafka Engine + MergeTree | CDC from MSK |
 | Silver | `silver` | ReplacingMergeTree, AggregatingMergeTree | Materialized Views from Bronze |
 | Gold | `gold` | SummingMergeTree | dbt transformations (Phase 3) |
-| Feature Store | `feature_store` | MergeTree | Spark/Python computation (Phase 4) |
+| Feature Store | `feature_store` | ReplacingMergeTree | Python computation via clickhouse-driver (Phase 4) |
 
 ### Naming Conventions
 
@@ -209,37 +224,41 @@ curl -X POST http://localhost:8000/features/batch \
 - Bronze (Mongo): `bronze.mongo_{collection}_kafka`, `bronze.mongo_{collection}_raw`, `bronze.mv_mongo_{collection}`
 - Silver: `silver.{table}_silver`
 - Gold: `gold.{metric_name}`
-- Feature Store: `feature_store.user_credit_features`
+- Feature Store: `feature_store.user_credit_features`, `feature_store.drift_metrics`
 
 ---
 
 ## Dashboards
 
-Four Grafana dashboards provisioned via JSON API:
+Five Grafana dashboards provisioned on self-hosted Grafana (ClickHouse EC2 port 3000, via SSH tunnel):
 
-### 1. Pipeline Health (`docs/screenshots/pipeline_health.png`)
-- CDC lag per connector (seconds)
-- Kafka consumer group offsets
-- ClickHouse insert rate (rows/sec)
-- MSK broker metrics
+### 1. Merchant Operations ([screenshot](docs/screenshots/merchant_operations.png))
+- GMV by merchant (time series), approval rate trend, BNPL penetration (gauge)
+- Decision latency P50/P95/P99, top 10 merchants by GMV
 
-### 2. Feature Store SLOs (`docs/screenshots/feature_store_slos.png`)
-- API P50/P95/P99 latency
-- Feature freshness (time since last computation)
-- Drift scores per feature
-- Cache hit ratio
+### 2. Feature Store Health ([screenshot](docs/screenshots/feature_store_health.png))
+- Feature freshness (time since last write), API P99 latency (Prometheus)
+- Feature row count, version distribution, request rate
 
-### 3. FinOps (`docs/screenshots/finops.png`)
-- Cost per service (estimated)
-- ClickHouse disk usage by database
-- MSK throughput (bytes in/out)
-- ECS task CPU/memory utilization
+### 3. Feature Drift Monitor ([screenshot](docs/screenshots/feature_drift_monitor.png))
+- Drift score per feature (8 lines), drift detected status (red/green)
+- Baseline vs current median, IQR threshold at 3.0
+- Data source: `feature_store.drift_metrics` (ClickHouse, not AMP)
 
-### 4. Risk Overview (`docs/screenshots/risk_overview.png`)
-- Daily approval/decline rates
-- Total credit exposure
-- Default rate trends
-- Merchant risk tier distribution
+### 4. Pipeline SLOs ([screenshot](docs/screenshots/pipeline_slos.png))
+- Ingestion status, dbt run duration, Gold layer freshness
+- Feature pipeline last success, settlement reconciliation status, SLO summary table
+
+### 5. FinOps ([screenshot](docs/screenshots/finops.png))
+- Storage by database layer (`system.parts`), query cost top 10 (`system.query_log`)
+- Table engine distribution, API invocations
+
+### 5 Alert Rules
+- `feature_pipeline_stale` -- Feature Store > 6 hours old (Critical)
+- `feature_drift_detected` -- Any drift score > 3.0 (High)
+- `settlement_mismatch` -- Variance > 0.1% (High)
+- `approval_rate_drop` -- Rate drops > 15% in 1 hour (Medium)
+- `ingestion_flatline` -- No Bronze rows for 5 minutes (Critical)
 
 ---
 
@@ -267,18 +286,16 @@ Four Grafana dashboards provisioned via JSON API:
 
 ---
 
-## SLO Results
+## SLO Results (Measured)
 
-| SLO | Target | Actual | Status |
-|-----|--------|--------|--------|
-| Feature API P99 latency | < 50ms | ~35ms | PASS |
-| Feature freshness | < 1 hour | ~30 min (DAG schedule) | PASS |
-| CDC lag (steady state) | < 30s | ~5s | PASS |
-| CDC lag (stress test) | < 60s | ~25s | PASS |
-| dbt full run | < 10 min | ~4 min | PASS |
-| Feature computation | < 15 min | ~6 min | PASS |
-| Drift detection | Daily | Every 24h via DAG | PASS |
-| Dashboard load time | < 5s | ~2s | PASS |
+| SLO | Target | Measured | Status |
+|-----|--------|----------|--------|
+| Feature Store freshness | < 6 hours | < 1 hour | PASS |
+| Feature API P99 latency | < 50ms | 5.5ms | PASS |
+| Gold layer freshness | < 25 hours | < 1 hour | PASS |
+| Ingestion latency P95 | < 30 seconds | < 5 seconds | PASS |
+| Settlement reconciliation | Completes by 6 AM | Complete | PASS |
+| Feature drift detection | < 1 hour | < 5 minutes | PASS |
 
 ---
 
@@ -289,8 +306,8 @@ Four Grafana dashboards provisioned via JSON API:
 | ADR-001 | Full AWS, no local Kind/Strimzi | Production-grade portfolio project; cost controlled via `terraform destroy` |
 | ADR-002 | Single AZ (eu-north-1a) | Cost reduction for dev/demo; multi-AZ documented as production improvement |
 | ADR-003 | DocumentDB over MongoDB on EC2 | Insert-only event collections; `fullDocumentBeforeChange` not needed |
-| ADR-004 | MSK dual auth (IAM + SCRAM) | Java clients use IAM; ClickHouse librdkafka requires SCRAM-SHA-512 |
-| ADR-005 | Feature Store dual write (Delta Lake + ClickHouse) | Delta Lake for audit/backfill; ClickHouse for sub-50ms serving |
+| ADR-004 | MSK Provisioned with dual auth (IAM + SCRAM) | MSK Serverless has no SCRAM; ClickHouse librdkafka requires SCRAM-SHA-512. Discovered during Phase 1 build. |
+| ADR-005 | Feature computation on bastion, not EMR Serverless | Spark JDBC cannot handle DateTime64 far-future timestamps (year 2299 overflow). clickhouse-driver on bastion works. EMR code preserved. |
 
 ---
 
@@ -318,9 +335,11 @@ paystream/
   debezium/               # Debezium Docker configs and connector JSON
   dbt/                    # dbt project (staging, intermediate, Gold models)
   scripts/                # Deployment, seed, verification, and feature scripts
-  dags/                   # Airflow DAGs (synced to S3 for MWAA)
-  fastapi/                # Feature API service
-  grafana/                # Dashboard JSON definitions
+  spark/                  # EMR Serverless Spark jobs (reference — JDBC blocked)
+  api/                    # FastAPI Feature Store API (ECS Fargate + ALB)
+  dags/                   # 7 Airflow DAGs (synced to MWAA S3)
+  grafana/                # 5 dashboard JSONs, 5 alert JSONs, datasources
+  stress_test/            # 8-wave stress test framework + SLO results
   docs/                   # Bug log, demo queries, screenshots
   versions.yaml           # Single source of truth for all component versions
   Makefile                # Composite build targets
@@ -351,7 +370,7 @@ Estimated cost per 6-hour session: **~$5.80**
 | Service | Hourly Cost | 6-Hour Cost |
 |---------|------------|-------------|
 | MSK Provisioned (t3.small x2) | $0.14 | $0.84 |
-| RDS PostgreSQL (db.t3.micro) | $0.02 | $0.12 |
+| RDS PostgreSQL (db.t3.medium) | $0.07 | $0.42 |
 | DocumentDB (db.t3.medium) | $0.08 | $0.48 |
 | EC2 ClickHouse (r6i.large) | $0.15 | $0.90 |
 | EC2 Bastion (t3.micro) | $0.01 | $0.06 |
