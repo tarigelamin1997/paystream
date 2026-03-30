@@ -1,0 +1,81 @@
+{
+  "dashboard": {
+    "uid": "paystream-merchant-ops",
+    "title": "Merchant Operations",
+    "tags": ["paystream", "merchant", "operations"],
+    "timezone": "browser",
+    "refresh": "30s",
+    "time": { "from": "now-24h", "to": "now" },
+    "panels": [
+      {
+        "id": 1,
+        "title": "GMV by Merchant (Last 24h)",
+        "type": "barchart",
+        "gridPos": { "h": 8, "w": 12, "x": 0, "y": 0 },
+        "datasource": { "type": "grafana-clickhouse-datasource", "uid": "clickhouse" },
+        "targets": [
+          {
+            "rawSql": "SELECT m.name AS merchant, sum(t.total_amount) AS gmv FROM silver.transactions_silver t JOIN silver.merchants_silver m ON t.merchant_id = m.merchant_id WHERE t._ingested_at >= now() - INTERVAL 24 HOUR GROUP BY merchant ORDER BY gmv DESC LIMIT 20",
+            "format": "table"
+          }
+        ]
+      },
+      {
+        "id": 2,
+        "title": "Approval Rate (Last 24h)",
+        "type": "timeseries",
+        "gridPos": { "h": 8, "w": 12, "x": 12, "y": 0 },
+        "datasource": { "type": "grafana-clickhouse-datasource", "uid": "clickhouse" },
+        "targets": [
+          {
+            "rawSql": "SELECT toStartOfHour(_ingested_at) AS ts, countIf(status = 'approved') * 100.0 / count() AS approval_rate FROM silver.transactions_silver WHERE _ingested_at >= now() - INTERVAL 24 HOUR GROUP BY ts ORDER BY ts",
+            "format": "timeseries"
+          }
+        ]
+      },
+      {
+        "id": 3,
+        "title": "BNPL Penetration Rate",
+        "type": "gauge",
+        "gridPos": { "h": 8, "w": 6, "x": 0, "y": 8 },
+        "datasource": { "type": "grafana-clickhouse-datasource", "uid": "clickhouse" },
+        "fieldConfig": {
+          "defaults": { "unit": "percent", "min": 0, "max": 100, "thresholds": { "steps": [{ "value": 0, "color": "red" }, { "value": 30, "color": "yellow" }, { "value": 60, "color": "green" }] } }
+        },
+        "targets": [
+          {
+            "rawSql": "SELECT countIf(status = 'approved') * 100.0 / count() AS bnpl_penetration FROM silver.transactions_silver WHERE _ingested_at >= now() - INTERVAL 24 HOUR",
+            "format": "table"
+          }
+        ]
+      },
+      {
+        "id": 4,
+        "title": "Decision Latency P95 (ms)",
+        "type": "stat",
+        "gridPos": { "h": 8, "w": 6, "x": 6, "y": 8 },
+        "datasource": { "type": "grafana-clickhouse-datasource", "uid": "clickhouse" },
+        "targets": [
+          {
+            "rawSql": "SELECT quantile(0.95)(decision_latency_ms) AS p95_latency FROM silver.transactions_silver WHERE _ingested_at >= now() - INTERVAL 24 HOUR",
+            "format": "table"
+          }
+        ]
+      },
+      {
+        "id": 5,
+        "title": "Top 10 Merchants by Transaction Count",
+        "type": "table",
+        "gridPos": { "h": 8, "w": 12, "x": 12, "y": 8 },
+        "datasource": { "type": "grafana-clickhouse-datasource", "uid": "clickhouse" },
+        "targets": [
+          {
+            "rawSql": "SELECT m.name AS merchant, count() AS txn_count, sum(t.total_amount) AS total_gmv, countIf(t.status = 'approved') * 100.0 / count() AS approval_pct FROM silver.transactions_silver t JOIN silver.merchants_silver m ON t.merchant_id = m.merchant_id WHERE t._ingested_at >= now() - INTERVAL 24 HOUR GROUP BY merchant ORDER BY txn_count DESC LIMIT 10",
+            "format": "table"
+          }
+        ]
+      }
+    ]
+  },
+  "overwrite": true
+}

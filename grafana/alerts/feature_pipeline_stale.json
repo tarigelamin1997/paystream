@@ -1,0 +1,42 @@
+{
+  "title": "Feature Pipeline Stale (> 6 hours)",
+  "ruleGroup": "paystream-alerts",
+  "folderUID": "paystream",
+  "condition": "C",
+  "for": "5m",
+  "labels": { "severity": "critical", "team": "paystream" },
+  "annotations": {
+    "summary": "Feature store has not been updated in over 6 hours",
+    "description": "The latest _ingested_at in feature_store.user_credit_features is older than 6 hours."
+  },
+  "data": [
+    {
+      "refId": "A",
+      "datasourceUid": "clickhouse",
+      "model": {
+        "rawSql": "SELECT dateDiff('hour', max(_ingested_at), now()) AS hours_stale FROM feature_store.user_credit_features",
+        "format": "table"
+      }
+    },
+    {
+      "refId": "B",
+      "datasourceUid": "__expr__",
+      "model": {
+        "type": "reduce",
+        "expression": "A",
+        "reducer": "last"
+      }
+    },
+    {
+      "refId": "C",
+      "datasourceUid": "__expr__",
+      "model": {
+        "type": "threshold",
+        "expression": "B",
+        "conditions": [
+          { "evaluator": { "type": "gt", "params": [6] } }
+        ]
+      }
+    }
+  ]
+}

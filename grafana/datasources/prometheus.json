@@ -1,0 +1,10 @@
+{
+  "name": "Prometheus",
+  "type": "prometheus",
+  "access": "proxy",
+  "url": "https://aps-workspaces.eu-north-1.amazonaws.com/workspaces/ws-0e518953-9d8b-492d-a249-d7c5ee64eaa6/",
+  "jsonData": {
+    "sigV4Auth": true,
+    "sigV4Region": "eu-north-1"
+  }
+}

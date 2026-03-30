@@ -1,0 +1,42 @@
+{
+  "title": "Feature Drift Detected",
+  "ruleGroup": "paystream-alerts",
+  "folderUID": "paystream",
+  "condition": "C",
+  "for": "0s",
+  "labels": { "severity": "warning", "team": "paystream" },
+  "annotations": {
+    "summary": "One or more features have drifted in the last hour",
+    "description": "drift_metrics shows is_drifted=1 for recent measurements."
+  },
+  "data": [
+    {
+      "refId": "A",
+      "datasourceUid": "clickhouse",
+      "model": {
+        "rawSql": "SELECT count() AS drifted FROM feature_store.drift_metrics WHERE is_drifted = 1 AND measured_at > now() - INTERVAL 1 HOUR",
+        "format": "table"
+      }
+    },
+    {
+      "refId": "B",
+      "datasourceUid": "__expr__",
+      "model": {
+        "type": "reduce",
+        "expression": "A",
+        "reducer": "last"
+      }
+    },
+    {
+      "refId": "C",
+      "datasourceUid": "__expr__",
+      "model": {
+        "type": "threshold",
+        "expression": "B",
+        "conditions": [
+          { "evaluator": { "type": "gt", "params": [0] } }
+        ]
+      }
+    }
+  ]
+}

@@ -1,0 +1,13 @@
+{
+  "name": "ClickHouse",
+  "type": "grafana-clickhouse-datasource",
+  "access": "proxy",
+  "url": "10.0.10.70:9000",
+  "jsonData": {
+    "host": "10.0.10.70",
+    "port": 9000,
+    "protocol": "native",
+    "defaultDatabase": "silver"
+  },
+  "isDefault": true
+}

@@ -1,0 +1,66 @@
+# PayStream Stress Test Configuration
+# 8 waves of increasing load to validate SLOs under pressure.
+# Note: This test measures SLOs on existing data — it does not insert new rows.
+
+test_name: "PayStream SLO Stress Test"
+clickhouse_host: "localhost"
+clickhouse_port: 9000
+clickhouse_user: "default"
+clickhouse_password: ""
+
+slo_targets:
+  feature_store_freshness_hours: 6
+  feature_api_p99_ms: 50
+  gold_layer_freshness_hours: 25
+  ingestion_latency_p95_seconds: 30
+  settlement_reconciliation_by_hour: 6
+  drift_detection_latency_hours: 1
+
+waves:
+  - name: "wave_1_baseline"
+    description: "Baseline measurement — no additional load"
+    concurrent_queries: 1
+    duration_seconds: 30
+    query_interval_ms: 1000
+
+  - name: "wave_2_light"
+    description: "Light concurrent reads"
+    concurrent_queries: 5
+    duration_seconds: 60
+    query_interval_ms: 500
+
+  - name: "wave_3_moderate"
+    description: "Moderate read concurrency"
+    concurrent_queries: 10
+    duration_seconds: 60
+    query_interval_ms: 200
+
+  - name: "wave_4_heavy_reads"
+    description: "Heavy concurrent analytical reads"
+    concurrent_queries: 20
+    duration_seconds: 60
+    query_interval_ms: 100
+
+  - name: "wave_5_mixed"
+    description: "Mixed: analytical + point lookups"
+    concurrent_queries: 15
+    duration_seconds: 60
+    query_interval_ms: 150
+
+  - name: "wave_6_burst"
+    description: "Burst: 50 concurrent queries"
+    concurrent_queries: 50
+    duration_seconds: 30
+    query_interval_ms: 50
+
+  - name: "wave_7_sustained"
+    description: "Sustained moderate load over longer period"
+    concurrent_queries: 10
+    duration_seconds: 120
+    query_interval_ms: 200
+
+  - name: "wave_8_cooldown"
+    description: "Cooldown — verify SLOs after stress"
+    concurrent_queries: 1
+    duration_seconds: 30
+    query_interval_ms: 1000

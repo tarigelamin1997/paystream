@@ -102,6 +102,21 @@ Each verify check number, pass/fail, and the actual output value.
 - Create the Notion page AFTER verify passes, not during execution.
 - After writing the execution log, update the phase plan page's Status line: change "🔲 Built" to "✅ Built" and "🔲 Verified" to "✅ Verified" using the Notion update tool.
 
+### Execution Log — Live Update Rule (CRITICAL)
+**The Execution Log is a LIVING document.** Every time you make any change to a phase — a post-build fix, a DAG rewrite, a file update, a re-verification — you MUST immediately update that phase's Execution Log in Notion to reflect the current state.
+
+The Execution Log must always be an accurate snapshot of what is actually implemented RIGHT NOW. Not what was implemented when the phase first passed verification. NOW.
+
+Specific requirements:
+- If you fix a failed DAG after initial verification, update the Execution Log with the fix details and change the affected verify check from FAILED/PENDING to PASS.
+- If you add a new file (e.g., a DDL that wasn't in the original plan), add it to the Files Created Checklist.
+- If a post-build fix introduces a new deviation, add it to the Deviations section.
+- If verify results change (e.g., a check that was PARTIAL becomes PASS), update the verify table immediately.
+- The Result line (e.g., "12/12 PASSED") must always match the actual current state of the verify table.
+- Add a "Post-build fixes applied" section at the bottom if fixes were made after initial verification. List each fix with what was changed and why.
+
+**Do not wait until the end of a session to update the log. Update it the moment a change is made.** Tarig uses the Execution Log to track the real status of each phase. A stale log is a broken log.
+
 ### Error Handling
 - If ANY step fails: STOP. Report the step number, the exact error, and relevant logs.
 - Do not attempt workarounds or fixes without reporting first.

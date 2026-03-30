@@ -1,0 +1,42 @@
+{
+  "title": "Settlement Reconciliation Mismatch",
+  "ruleGroup": "paystream-alerts",
+  "folderUID": "paystream",
+  "condition": "C",
+  "for": "0s",
+  "labels": { "severity": "critical", "team": "paystream" },
+  "annotations": {
+    "summary": "Settlement reconciliation found mismatches today",
+    "description": "gold.settlement_reconciliation has rows with status='mismatch' for today."
+  },
+  "data": [
+    {
+      "refId": "A",
+      "datasourceUid": "clickhouse",
+      "model": {
+        "rawSql": "SELECT count() AS mismatches FROM gold.settlement_reconciliation WHERE status = 'mismatch' AND settlement_date = today()",
+        "format": "table"
+      }
+    },
+    {
+      "refId": "B",
+      "datasourceUid": "__expr__",
+      "model": {
+        "type": "reduce",
+        "expression": "A",
+        "reducer": "last"
+      }
+    },
+    {
+      "refId": "C",
+      "datasourceUid": "__expr__",
+      "model": {
+        "type": "threshold",
+        "expression": "B",
+        "conditions": [
+          { "evaluator": { "type": "gt", "params": [0] } }
+        ]
+      }
+    }
+  ]
+}

@@ -1,0 +1,42 @@
+{
+  "title": "Ingestion Flatline (No Bronze Rows for 5 min)",
+  "ruleGroup": "paystream-alerts",
+  "folderUID": "paystream",
+  "condition": "C",
+  "for": "5m",
+  "labels": { "severity": "critical", "team": "paystream" },
+  "annotations": {
+    "summary": "No new rows ingested into Bronze layer for 5 minutes",
+    "description": "bronze.pg_transactions_raw has not received new rows (based on _ingested_at)."
+  },
+  "data": [
+    {
+      "refId": "A",
+      "datasourceUid": "clickhouse",
+      "model": {
+        "rawSql": "SELECT count() AS recent_rows FROM bronze.pg_transactions_raw WHERE _ingested_at >= now() - INTERVAL 5 MINUTE",
+        "format": "table"
+      }
+    },
+    {
+      "refId": "B",
+      "datasourceUid": "__expr__",
+      "model": {
+        "type": "reduce",
+        "expression": "A",
+        "reducer": "last"
+      }
+    },
+    {
+      "refId": "C",
+      "datasourceUid": "__expr__",
+      "model": {
+        "type": "threshold",
+        "expression": "B",
+        "conditions": [
+          { "evaluator": { "type": "lt", "params": [1] } }
+        ]
+      }
+    }
+  ]
+}
