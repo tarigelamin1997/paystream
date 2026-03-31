@@ -105,6 +105,24 @@ make pipeline
 make teardown
 ```
 
+### Restarting After EC2 Stop
+
+If you stopped EC2 instances to save costs and are restarting:
+
+1. Start the EC2 instances (ClickHouse + Bastion) from AWS Console
+2. Wait 2-3 minutes for services to boot
+3. SSH to bastion and set up tunnels:
+   ```bash
+   ssh -L 9000:<CH_PRIVATE_IP>:9000 -L 3000:<CH_PRIVATE_IP>:3000 \
+       -i ~/.ssh/paystream-bastion.pem ec2-user@<BASTION_EIP> -N &
+   ```
+4. Run the recovery script:
+   ```bash
+   make post-restart
+   ```
+
+This checks all 7 services and auto-restarts Debezium connector tasks if they failed during the shutdown. The most common issue is the Debezium PG connector losing its replication slot connection — the script handles this automatically. If RDS ran out of storage (WAL accumulation), the script provides the exact `aws rds modify-db-instance` command to expand it.
+
 ### Individual Phase Commands
 
 ```bash

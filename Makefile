@@ -80,3 +80,7 @@ verify-clean:
 	@echo "=== Verifying clean teardown ==="
 	cd terraform && terraform state list 2>/dev/null | wc -l | xargs -I{} echo "Remaining resources: {}"
 	@echo "=== Verify clean complete ==="
+
+# === Post-Restart Recovery ===
+post-restart:
+	bash scripts/post_restart.sh
