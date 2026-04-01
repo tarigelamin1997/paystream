@@ -1,82 +1,164 @@
 {
-  "dashboard": {
-    "uid": "paystream-drift-monitor",
-    "title": "Feature Drift Monitor",
-    "tags": ["paystream", "drift", "feature-store"],
-    "timezone": "browser",
-    "refresh": "1m",
-    "time": { "from": "now-7d", "to": "now" },
-    "panels": [
-      {
-        "id": 1,
-        "title": "Drift Score per Feature (Time Series)",
-        "type": "timeseries",
-        "gridPos": { "h": 8, "w": 24, "x": 0, "y": 0 },
-        "datasource": { "type": "grafana-clickhouse-datasource", "uid": "clickhouse" },
-        "targets": [
-          {
-            "rawSql": "SELECT measured_at AS ts, feature_name, drift_score FROM feature_store.drift_metrics WHERE measured_at >= now() - INTERVAL 7 DAY ORDER BY ts",
-            "format": "timeseries"
-          }
-        ]
-      },
-      {
-        "id": 2,
-        "title": "Drift Detected (Current)",
-        "type": "stat",
-        "gridPos": { "h": 6, "w": 6, "x": 0, "y": 8 },
-        "datasource": { "type": "grafana-clickhouse-datasource", "uid": "clickhouse" },
-        "fieldConfig": {
-          "defaults": { "thresholds": { "steps": [{ "value": 0, "color": "green" }, { "value": 1, "color": "red" }] } }
-        },
-        "targets": [
-          {
-            "rawSql": "SELECT count() AS drifted_features FROM feature_store.drift_metrics WHERE is_drifted = 1 AND measured_at >= now() - INTERVAL 1 HOUR",
-            "format": "table"
-          }
-        ]
-      },
-      {
-        "id": 3,
-        "title": "Baseline vs Current Mean",
-        "type": "table",
-        "gridPos": { "h": 8, "w": 9, "x": 6, "y": 8 },
-        "datasource": { "type": "grafana-clickhouse-datasource", "uid": "clickhouse" },
-        "targets": [
-          {
-            "rawSql": "SELECT feature_name, baseline_mean, current_mean, abs(current_mean - baseline_mean) AS delta FROM feature_store.drift_metrics WHERE measured_at = (SELECT max(measured_at) FROM feature_store.drift_metrics) ORDER BY delta DESC",
-            "format": "table"
-          }
-        ]
-      },
-      {
-        "id": 4,
-        "title": "IQR Threshold Check",
-        "type": "table",
-        "gridPos": { "h": 8, "w": 9, "x": 15, "y": 8 },
-        "datasource": { "type": "grafana-clickhouse-datasource", "uid": "clickhouse" },
-        "targets": [
-          {
-            "rawSql": "SELECT feature_name, drift_score, threshold, if(drift_score > threshold, 'EXCEEDED', 'OK') AS status FROM feature_store.drift_metrics WHERE measured_at = (SELECT max(measured_at) FROM feature_store.drift_metrics) ORDER BY drift_score DESC",
-            "format": "table"
-          }
-        ]
-      },
-      {
-        "id": 5,
-        "title": "Last Drift Event",
-        "type": "stat",
-        "gridPos": { "h": 6, "w": 6, "x": 0, "y": 16 },
-        "datasource": { "type": "grafana-clickhouse-datasource", "uid": "clickhouse" },
-        "fieldConfig": { "defaults": { "unit": "dateTimeAsIso" } },
-        "targets": [
-          {
-            "rawSql": "SELECT max(measured_at) AS last_drift FROM feature_store.drift_metrics WHERE is_drifted = 1",
-            "format": "table"
-          }
-        ]
-      }
-    ]
+  "uid": "paystream-drift-monitor",
+  "title": "Feature Drift Monitor",
+  "tags": [
+    "paystream",
+    "drift",
+    "feature-store"
+  ],
+  "timezone": "browser",
+  "refresh": "1m",
+  "time": {
+    "from": "now-7d",
+    "to": "now"
   },
-  "overwrite": true
+  "panels": [
+    {
+      "id": 1,
+      "title": "Drift Score per Feature (Time Series)",
+      "type": "timeseries",
+      "gridPos": {
+        "h": 8,
+        "w": 24,
+        "x": 0,
+        "y": 0
+      },
+      "datasource": {
+        "type": "grafana-clickhouse-datasource",
+        "uid": "PDEE91DDB90597936"
+      },
+      "targets": [
+        {
+          "rawSql": "SELECT measured_at AS ts, feature_name, drift_score FROM feature_store.drift_metrics WHERE measured_at >= now() - INTERVAL 7 DAY ORDER BY ts",
+          "format": "timeseries",
+          "datasource": {
+            "type": "grafana-clickhouse-datasource",
+            "uid": "PDEE91DDB90597936"
+          }
+        }
+      ]
+    },
+    {
+      "id": 2,
+      "title": "Drift Detected (Current)",
+      "type": "stat",
+      "gridPos": {
+        "h": 6,
+        "w": 6,
+        "x": 0,
+        "y": 8
+      },
+      "datasource": {
+        "type": "grafana-clickhouse-datasource",
+        "uid": "PDEE91DDB90597936"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "thresholds": {
+            "steps": [
+              {
+                "value": 0,
+                "color": "green"
+              },
+              {
+                "value": 1,
+                "color": "red"
+              }
+            ]
+          }
+        }
+      },
+      "targets": [
+        {
+          "rawSql": "SELECT count() AS drifted_features FROM feature_store.drift_metrics WHERE is_drifted = 1 AND measured_at >= now() - INTERVAL 1 HOUR",
+          "format": "table",
+          "datasource": {
+            "type": "grafana-clickhouse-datasource",
+            "uid": "PDEE91DDB90597936"
+          }
+        }
+      ]
+    },
+    {
+      "id": 3,
+      "title": "Baseline vs Current Mean",
+      "type": "table",
+      "gridPos": {
+        "h": 8,
+        "w": 9,
+        "x": 6,
+        "y": 8
+      },
+      "datasource": {
+        "type": "grafana-clickhouse-datasource",
+        "uid": "PDEE91DDB90597936"
+      },
+      "targets": [
+        {
+          "rawSql": "SELECT feature_name, baseline_median, current_median, abs(current_median - baseline_median) AS delta FROM feature_store.drift_metrics WHERE measured_at = (SELECT max(measured_at) FROM feature_store.drift_metrics) ORDER BY delta DESC",
+          "format": "table",
+          "datasource": {
+            "type": "grafana-clickhouse-datasource",
+            "uid": "PDEE91DDB90597936"
+          }
+        }
+      ]
+    },
+    {
+      "id": 4,
+      "title": "IQR Threshold Check",
+      "type": "table",
+      "gridPos": {
+        "h": 8,
+        "w": 9,
+        "x": 15,
+        "y": 8
+      },
+      "datasource": {
+        "type": "grafana-clickhouse-datasource",
+        "uid": "PDEE91DDB90597936"
+      },
+      "targets": [
+        {
+          "rawSql": "SELECT feature_name, drift_score, if(drift_score > 'EXCEEDED', 'OK') AS status FROM feature_store.drift_metrics WHERE measured_at = (SELECT max(measured_at) FROM feature_store.drift_metrics) ORDER BY drift_score DESC",
+          "format": "table",
+          "datasource": {
+            "type": "grafana-clickhouse-datasource",
+            "uid": "PDEE91DDB90597936"
+          }
+        }
+      ]
+    },
+    {
+      "id": 5,
+      "title": "Last Drift Event",
+      "type": "stat",
+      "gridPos": {
+        "h": 6,
+        "w": 6,
+        "x": 0,
+        "y": 16
+      },
+      "datasource": {
+        "type": "grafana-clickhouse-datasource",
+        "uid": "PDEE91DDB90597936"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "dateTimeAsIso"
+        }
+      },
+      "targets": [
+        {
+          "rawSql": "SELECT max(measured_at) AS last_drift FROM feature_store.drift_metrics WHERE is_drifted = 1",
+          "format": "table",
+          "datasource": {
+            "type": "grafana-clickhouse-datasource",
+            "uid": "PDEE91DDB90597936"
+          }
+        }
+      ]
+    }
+  ],
+  "id": null
 }

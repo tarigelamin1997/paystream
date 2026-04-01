@@ -1,96 +1,194 @@
 {
-  "dashboard": {
-    "uid": "paystream-pipeline-slos",
-    "title": "Pipeline SLOs",
-    "tags": ["paystream", "slo", "pipeline"],
-    "timezone": "browser",
-    "refresh": "1m",
-    "time": { "from": "now-24h", "to": "now" },
-    "panels": [
-      {
-        "id": 1,
-        "title": "Ingestion Status (Bronze Freshness)",
-        "type": "stat",
-        "gridPos": { "h": 6, "w": 8, "x": 0, "y": 0 },
-        "datasource": { "type": "grafana-clickhouse-datasource", "uid": "clickhouse" },
-        "fieldConfig": {
-          "defaults": { "thresholds": { "steps": [{ "value": 0, "color": "green" }, { "value": 300, "color": "red" }] } }
-        },
-        "targets": [
-          {
-            "rawSql": "SELECT dateDiff('second', max(_ingested_at), now()) AS seconds_since_last FROM bronze.pg_transactions_raw",
-            "format": "table"
-          }
-        ]
-      },
-      {
-        "id": 2,
-        "title": "dbt Run Status",
-        "type": "stat",
-        "gridPos": { "h": 6, "w": 8, "x": 8, "y": 0 },
-        "datasource": { "type": "grafana-clickhouse-datasource", "uid": "clickhouse" },
-        "targets": [
-          {
-            "rawSql": "SELECT status, count() AS cnt FROM gold.dbt_test_results WHERE run_started_at >= now() - INTERVAL 24 HOUR GROUP BY status ORDER BY cnt DESC LIMIT 1",
-            "format": "table"
-          }
-        ]
-      },
-      {
-        "id": 3,
-        "title": "Gold Layer Freshness",
-        "type": "stat",
-        "gridPos": { "h": 6, "w": 8, "x": 16, "y": 0 },
-        "datasource": { "type": "grafana-clickhouse-datasource", "uid": "clickhouse" },
-        "fieldConfig": { "defaults": { "unit": "dateTimeAsIso" } },
-        "targets": [
-          {
-            "rawSql": "SELECT max(_ingested_at) AS last_gold_update FROM gold.merchant_daily_kpis",
-            "format": "table"
-          }
-        ]
-      },
-      {
-        "id": 4,
-        "title": "Feature Pipeline Status",
-        "type": "stat",
-        "gridPos": { "h": 6, "w": 8, "x": 0, "y": 6 },
-        "datasource": { "type": "grafana-clickhouse-datasource", "uid": "clickhouse" },
-        "fieldConfig": { "defaults": { "unit": "dateTimeAsIso" } },
-        "targets": [
-          {
-            "rawSql": "SELECT max(_ingested_at) AS last_feature_update FROM feature_store.user_credit_features",
-            "format": "table"
-          }
-        ]
-      },
-      {
-        "id": 5,
-        "title": "Settlement Reconciliation Status",
-        "type": "stat",
-        "gridPos": { "h": 6, "w": 8, "x": 8, "y": 6 },
-        "datasource": { "type": "grafana-clickhouse-datasource", "uid": "clickhouse" },
-        "targets": [
-          {
-            "rawSql": "SELECT status, count() AS cnt FROM gold.settlement_reconciliation WHERE settlement_date = today() GROUP BY status",
-            "format": "table"
-          }
-        ]
-      },
-      {
-        "id": 6,
-        "title": "SLO Summary",
-        "type": "table",
-        "gridPos": { "h": 8, "w": 24, "x": 0, "y": 12 },
-        "datasource": { "type": "grafana-clickhouse-datasource", "uid": "clickhouse" },
-        "targets": [
-          {
-            "rawSql": "SELECT 'Feature Store freshness' AS slo, '< 6 hours' AS target, toString(dateDiff('hour', max_fs, now())) || ' hours' AS measured, if(dateDiff('hour', max_fs, now()) < 6, 'MET', 'BREACHED') AS status FROM (SELECT max(_ingested_at) AS max_fs FROM feature_store.user_credit_features) UNION ALL SELECT 'Gold layer freshness', '< 25 hours', toString(dateDiff('hour', max_g, now())) || ' hours', if(dateDiff('hour', max_g, now()) < 25, 'MET', 'BREACHED') FROM (SELECT max(_ingested_at) AS max_g FROM gold.merchant_daily_kpis) UNION ALL SELECT 'Ingestion latency', '< 30 seconds', toString(dateDiff('second', max_b, now())) || ' sec', if(dateDiff('second', max_b, now()) < 30, 'MET', 'BREACHED') FROM (SELECT max(_ingested_at) AS max_b FROM bronze.pg_transactions_raw)",
-            "format": "table"
-          }
-        ]
-      }
-    ]
+  "uid": "paystream-pipeline-slos",
+  "title": "Pipeline SLOs",
+  "tags": [
+    "paystream",
+    "slo",
+    "pipeline"
+  ],
+  "timezone": "browser",
+  "refresh": "1m",
+  "time": {
+    "from": "now-24h",
+    "to": "now"
   },
-  "overwrite": true
+  "panels": [
+    {
+      "id": 1,
+      "title": "Ingestion Status (Bronze Freshness)",
+      "type": "stat",
+      "gridPos": {
+        "h": 6,
+        "w": 8,
+        "x": 0,
+        "y": 0
+      },
+      "datasource": {
+        "type": "grafana-clickhouse-datasource",
+        "uid": "PDEE91DDB90597936"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "thresholds": {
+            "steps": [
+              {
+                "value": 0,
+                "color": "green"
+              },
+              {
+                "value": 300,
+                "color": "red"
+              }
+            ]
+          }
+        }
+      },
+      "targets": [
+        {
+          "rawSql": "SELECT dateDiff('second', max(_ingested_at), now()) AS seconds_since_last FROM bronze.pg_transactions_raw",
+          "format": "table",
+          "datasource": {
+            "type": "grafana-clickhouse-datasource",
+            "uid": "PDEE91DDB90597936"
+          }
+        }
+      ]
+    },
+    {
+      "id": 2,
+      "title": "dbt Run Status",
+      "type": "stat",
+      "gridPos": {
+        "h": 6,
+        "w": 8,
+        "x": 8,
+        "y": 0
+      },
+      "datasource": {
+        "type": "grafana-clickhouse-datasource",
+        "uid": "PDEE91DDB90597936"
+      },
+      "targets": [
+        {
+          "rawSql": "SELECT status, count() AS cnt FROM gold.dbt_test_results WHERE run_started_at >= now() - INTERVAL 24 HOUR GROUP BY status ORDER BY cnt DESC LIMIT 1",
+          "format": "table",
+          "datasource": {
+            "type": "grafana-clickhouse-datasource",
+            "uid": "PDEE91DDB90597936"
+          }
+        }
+      ]
+    },
+    {
+      "id": 3,
+      "title": "Gold Layer Freshness",
+      "type": "stat",
+      "gridPos": {
+        "h": 6,
+        "w": 8,
+        "x": 16,
+        "y": 0
+      },
+      "datasource": {
+        "type": "grafana-clickhouse-datasource",
+        "uid": "PDEE91DDB90597936"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "dateTimeAsIso"
+        }
+      },
+      "targets": [
+        {
+          "rawSql": "SELECT max(_ingested_at) AS last_gold_update FROM gold.merchant_daily_kpis",
+          "format": "table",
+          "datasource": {
+            "type": "grafana-clickhouse-datasource",
+            "uid": "PDEE91DDB90597936"
+          }
+        }
+      ]
+    },
+    {
+      "id": 4,
+      "title": "Feature Pipeline Status",
+      "type": "stat",
+      "gridPos": {
+        "h": 6,
+        "w": 8,
+        "x": 0,
+        "y": 6
+      },
+      "datasource": {
+        "type": "grafana-clickhouse-datasource",
+        "uid": "PDEE91DDB90597936"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "dateTimeAsIso"
+        }
+      },
+      "targets": [
+        {
+          "rawSql": "SELECT max(_ingested_at) AS last_feature_update FROM feature_store.user_credit_features",
+          "format": "table",
+          "datasource": {
+            "type": "grafana-clickhouse-datasource",
+            "uid": "PDEE91DDB90597936"
+          }
+        }
+      ]
+    },
+    {
+      "id": 5,
+      "title": "Settlement Reconciliation Status",
+      "type": "stat",
+      "gridPos": {
+        "h": 6,
+        "w": 8,
+        "x": 8,
+        "y": 6
+      },
+      "datasource": {
+        "type": "grafana-clickhouse-datasource",
+        "uid": "PDEE91DDB90597936"
+      },
+      "targets": [
+        {
+          "rawSql": "SELECT status, count() AS cnt FROM gold.settlement_reconciliation WHERE settlement_date = today() GROUP BY status",
+          "format": "table",
+          "datasource": {
+            "type": "grafana-clickhouse-datasource",
+            "uid": "PDEE91DDB90597936"
+          }
+        }
+      ]
+    },
+    {
+      "id": 6,
+      "title": "SLO Summary",
+      "type": "table",
+      "gridPos": {
+        "h": 8,
+        "w": 24,
+        "x": 0,
+        "y": 12
+      },
+      "datasource": {
+        "type": "grafana-clickhouse-datasource",
+        "uid": "PDEE91DDB90597936"
+      },
+      "targets": [
+        {
+          "rawSql": "SELECT 'Feature Store freshness' AS slo, '< 6 hours' AS target, toString(dateDiff('hour', max_fs, now())) || ' hours' AS measured, if(dateDiff('hour', max_fs, now()) < 6, 'MET', 'BREACHED') AS status FROM (SELECT max(_ingested_at) AS max_fs FROM feature_store.user_credit_features) UNION ALL SELECT 'Gold layer freshness', '< 25 hours', toString(dateDiff('hour', max_g, now())) || ' hours', if(dateDiff('hour', max_g, now()) < 25, 'MET', 'BREACHED') FROM (SELECT max(_ingested_at) AS max_g FROM gold.merchant_daily_kpis) UNION ALL SELECT 'Ingestion latency', '< 30 seconds', toString(dateDiff('second', max_b, now())) || ' sec', if(dateDiff('second', max_b, now()) < 30, 'MET', 'BREACHED') FROM (SELECT max(_ingested_at) AS max_b FROM bronze.pg_transactions_raw)",
+          "format": "table",
+          "datasource": {
+            "type": "grafana-clickhouse-datasource",
+            "uid": "PDEE91DDB90597936"
+          }
+        }
+      ]
+    }
+  ],
+  "id": null
 }

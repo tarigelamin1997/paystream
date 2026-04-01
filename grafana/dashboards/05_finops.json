@@ -1,79 +1,148 @@
 {
-  "dashboard": {
-    "uid": "paystream-finops",
-    "title": "FinOps & Resource Usage",
-    "tags": ["paystream", "finops", "cost"],
-    "timezone": "browser",
-    "refresh": "5m",
-    "time": { "from": "now-7d", "to": "now" },
-    "panels": [
-      {
-        "id": 1,
-        "title": "Storage by Layer (MB)",
-        "type": "barchart",
-        "gridPos": { "h": 8, "w": 12, "x": 0, "y": 0 },
-        "datasource": { "type": "grafana-clickhouse-datasource", "uid": "clickhouse" },
-        "targets": [
-          {
-            "rawSql": "SELECT database, round(sum(data_compressed_bytes) / 1048576, 2) AS compressed_mb, round(sum(data_uncompressed_bytes) / 1048576, 2) AS uncompressed_mb FROM system.parts WHERE active AND database IN ('bronze', 'silver', 'gold', 'feature_store') GROUP BY database ORDER BY compressed_mb DESC",
-            "format": "table"
-          }
-        ]
-      },
-      {
-        "id": 2,
-        "title": "Query Cost Top 10 (by read bytes)",
-        "type": "table",
-        "gridPos": { "h": 8, "w": 12, "x": 12, "y": 0 },
-        "datasource": { "type": "grafana-clickhouse-datasource", "uid": "clickhouse" },
-        "targets": [
-          {
-            "rawSql": "SELECT type, query, round(read_bytes / 1048576, 2) AS read_mb, round(query_duration_ms / 1000, 2) AS duration_sec FROM system.query_log WHERE event_time >= now() - INTERVAL 24 HOUR AND type = 'QueryFinish' ORDER BY read_bytes DESC LIMIT 10",
-            "format": "table"
-          }
-        ]
-      },
-      {
-        "id": 3,
-        "title": "Spark Job Hours (EMR Serverless)",
-        "type": "stat",
-        "gridPos": { "h": 6, "w": 8, "x": 0, "y": 8 },
-        "datasource": { "type": "grafana-clickhouse-datasource", "uid": "clickhouse" },
-        "fieldConfig": { "defaults": { "unit": "h" } },
-        "targets": [
-          {
-            "rawSql": "SELECT 0 AS spark_hours",
-            "format": "table"
-          }
-        ]
-      },
-      {
-        "id": 4,
-        "title": "API Invocations (24h)",
-        "type": "stat",
-        "gridPos": { "h": 6, "w": 8, "x": 8, "y": 8 },
-        "datasource": { "type": "prometheus", "uid": "prometheus" },
-        "targets": [
-          {
-            "expr": "sum(increase(http_requests_total{job=\"paystream-fastapi\"}[24h]))",
-            "legendFormat": "Total Requests"
-          }
-        ]
-      },
-      {
-        "id": 5,
-        "title": "Table Engine Distribution",
-        "type": "barchart",
-        "gridPos": { "h": 8, "w": 8, "x": 16, "y": 8 },
-        "datasource": { "type": "grafana-clickhouse-datasource", "uid": "clickhouse" },
-        "targets": [
-          {
-            "rawSql": "SELECT engine, count() AS table_count FROM system.tables WHERE database IN ('bronze', 'silver', 'gold', 'feature_store') GROUP BY engine ORDER BY table_count DESC",
-            "format": "table"
-          }
-        ]
-      }
-    ]
+  "uid": "paystream-finops",
+  "title": "FinOps & Resource Usage",
+  "tags": [
+    "paystream",
+    "finops",
+    "cost"
+  ],
+  "timezone": "browser",
+  "refresh": "5m",
+  "time": {
+    "from": "now-7d",
+    "to": "now"
   },
-  "overwrite": true
+  "panels": [
+    {
+      "id": 1,
+      "title": "Storage by Layer (MB)",
+      "type": "barchart",
+      "gridPos": {
+        "h": 8,
+        "w": 12,
+        "x": 0,
+        "y": 0
+      },
+      "datasource": {
+        "type": "grafana-clickhouse-datasource",
+        "uid": "PDEE91DDB90597936"
+      },
+      "targets": [
+        {
+          "rawSql": "SELECT database, round(sum(data_compressed_bytes) / 1048576, 2) AS compressed_mb, round(sum(data_uncompressed_bytes) / 1048576, 2) AS uncompressed_mb FROM system.parts WHERE active AND database IN ('bronze', 'silver', 'gold', 'feature_store') GROUP BY database ORDER BY compressed_mb DESC",
+          "format": "table",
+          "datasource": {
+            "type": "grafana-clickhouse-datasource",
+            "uid": "PDEE91DDB90597936"
+          }
+        }
+      ]
+    },
+    {
+      "id": 2,
+      "title": "Query Cost Top 10 (by read bytes)",
+      "type": "table",
+      "gridPos": {
+        "h": 8,
+        "w": 12,
+        "x": 12,
+        "y": 0
+      },
+      "datasource": {
+        "type": "grafana-clickhouse-datasource",
+        "uid": "PDEE91DDB90597936"
+      },
+      "targets": [
+        {
+          "rawSql": "SELECT type, query, round(read_bytes / 1048576, 2) AS read_mb, round(query_duration_ms / 1000, 2) AS duration_sec FROM system.query_log WHERE event_time >= now() - INTERVAL 24 HOUR AND type = 'QueryFinish' ORDER BY read_bytes DESC LIMIT 10",
+          "format": "table",
+          "datasource": {
+            "type": "grafana-clickhouse-datasource",
+            "uid": "PDEE91DDB90597936"
+          }
+        }
+      ]
+    },
+    {
+      "id": 3,
+      "title": "Spark Job Hours (EMR Serverless)",
+      "type": "stat",
+      "gridPos": {
+        "h": 6,
+        "w": 8,
+        "x": 0,
+        "y": 8
+      },
+      "datasource": {
+        "type": "grafana-clickhouse-datasource",
+        "uid": "PDEE91DDB90597936"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "h"
+        }
+      },
+      "targets": [
+        {
+          "rawSql": "SELECT 0 AS spark_hours",
+          "format": "table",
+          "datasource": {
+            "type": "grafana-clickhouse-datasource",
+            "uid": "PDEE91DDB90597936"
+          }
+        }
+      ]
+    },
+    {
+      "id": 4,
+      "title": "API Invocations (24h)",
+      "type": "stat",
+      "gridPos": {
+        "h": 6,
+        "w": 8,
+        "x": 8,
+        "y": 8
+      },
+      "datasource": {
+        "type": "grafana-clickhouse-datasource",
+        "uid": "PDEE91DDB90597936"
+      },
+      "targets": [
+        {
+          "expr": "sum(increase(http_requests_total{job=\"paystream-fastapi\"}[24h]))",
+          "legendFormat": "Total Requests",
+          "datasource": {
+            "type": "grafana-clickhouse-datasource",
+            "uid": "PDEE91DDB90597936"
+          }
+        }
+      ]
+    },
+    {
+      "id": 5,
+      "title": "Table Engine Distribution",
+      "type": "barchart",
+      "gridPos": {
+        "h": 8,
+        "w": 8,
+        "x": 16,
+        "y": 8
+      },
+      "datasource": {
+        "type": "grafana-clickhouse-datasource",
+        "uid": "PDEE91DDB90597936"
+      },
+      "targets": [
+        {
+          "rawSql": "SELECT engine, count() AS table_count FROM system.tables WHERE database IN ('bronze', 'silver', 'gold', 'feature_store') GROUP BY engine ORDER BY table_count DESC",
+          "format": "table",
+          "datasource": {
+            "type": "grafana-clickhouse-datasource",
+            "uid": "PDEE91DDB90597936"
+          }
+        }
+      ]
+    }
+  ],
+  "id": null
 }

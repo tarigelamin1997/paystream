@@ -1,79 +1,148 @@
 {
-  "dashboard": {
-    "uid": "paystream-feature-health",
-    "title": "Feature Store Health",
-    "tags": ["paystream", "feature-store", "health"],
-    "timezone": "browser",
-    "refresh": "30s",
-    "time": { "from": "now-24h", "to": "now" },
-    "panels": [
-      {
-        "id": 1,
-        "title": "Feature Freshness (Last Update)",
-        "type": "stat",
-        "gridPos": { "h": 6, "w": 6, "x": 0, "y": 0 },
-        "datasource": { "type": "grafana-clickhouse-datasource", "uid": "clickhouse" },
-        "fieldConfig": { "defaults": { "unit": "dateTimeAsIso" } },
-        "targets": [
-          {
-            "rawSql": "SELECT max(_ingested_at) AS last_update FROM feature_store.user_credit_features",
-            "format": "table"
-          }
-        ]
-      },
-      {
-        "id": 2,
-        "title": "Feature API P99 Latency",
-        "type": "timeseries",
-        "gridPos": { "h": 8, "w": 12, "x": 6, "y": 0 },
-        "datasource": { "type": "prometheus", "uid": "prometheus" },
-        "targets": [
-          {
-            "expr": "histogram_quantile(0.99, sum(rate(http_request_duration_seconds_bucket{job=\"paystream-fastapi\"}[5m])) by (le))",
-            "legendFormat": "P99 Latency"
-          }
-        ]
-      },
-      {
-        "id": 3,
-        "title": "Feature API Request Rate",
-        "type": "timeseries",
-        "gridPos": { "h": 8, "w": 6, "x": 0, "y": 6 },
-        "datasource": { "type": "prometheus", "uid": "prometheus" },
-        "targets": [
-          {
-            "expr": "sum(rate(http_requests_total{job=\"paystream-fastapi\"}[5m]))",
-            "legendFormat": "Requests/sec"
-          }
-        ]
-      },
-      {
-        "id": 4,
-        "title": "Feature Store Row Count",
-        "type": "stat",
-        "gridPos": { "h": 8, "w": 6, "x": 6, "y": 6 },
-        "datasource": { "type": "grafana-clickhouse-datasource", "uid": "clickhouse" },
-        "targets": [
-          {
-            "rawSql": "SELECT count() AS row_count FROM feature_store.user_credit_features",
-            "format": "table"
-          }
-        ]
-      },
-      {
-        "id": 5,
-        "title": "Feature Version Distribution",
-        "type": "barchart",
-        "gridPos": { "h": 8, "w": 12, "x": 12, "y": 6 },
-        "datasource": { "type": "grafana-clickhouse-datasource", "uid": "clickhouse" },
-        "targets": [
-          {
-            "rawSql": "SELECT feature_version, count() AS cnt FROM feature_store.user_credit_features GROUP BY feature_version ORDER BY feature_version",
-            "format": "table"
-          }
-        ]
-      }
-    ]
+  "uid": "paystream-feature-health",
+  "title": "Feature Store Health",
+  "tags": [
+    "paystream",
+    "feature-store",
+    "health"
+  ],
+  "timezone": "browser",
+  "refresh": "30s",
+  "time": {
+    "from": "now-24h",
+    "to": "now"
   },
-  "overwrite": true
+  "panels": [
+    {
+      "id": 1,
+      "title": "Feature Freshness (Last Update)",
+      "type": "stat",
+      "gridPos": {
+        "h": 6,
+        "w": 6,
+        "x": 0,
+        "y": 0
+      },
+      "datasource": {
+        "type": "grafana-clickhouse-datasource",
+        "uid": "PDEE91DDB90597936"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "dateTimeAsIso"
+        }
+      },
+      "targets": [
+        {
+          "rawSql": "SELECT max(_ingested_at) AS last_update FROM feature_store.user_credit_features",
+          "format": "table",
+          "datasource": {
+            "type": "grafana-clickhouse-datasource",
+            "uid": "PDEE91DDB90597936"
+          }
+        }
+      ]
+    },
+    {
+      "id": 2,
+      "title": "Feature API P99 Latency",
+      "type": "timeseries",
+      "gridPos": {
+        "h": 8,
+        "w": 12,
+        "x": 6,
+        "y": 0
+      },
+      "datasource": {
+        "type": "grafana-clickhouse-datasource",
+        "uid": "PDEE91DDB90597936"
+      },
+      "targets": [
+        {
+          "expr": "histogram_quantile(0.99, sum(rate(http_request_duration_seconds_bucket{job=\"paystream-fastapi\"}[5m])) by (le))",
+          "legendFormat": "P99 Latency",
+          "datasource": {
+            "type": "grafana-clickhouse-datasource",
+            "uid": "PDEE91DDB90597936"
+          }
+        }
+      ]
+    },
+    {
+      "id": 3,
+      "title": "Feature API Request Rate",
+      "type": "timeseries",
+      "gridPos": {
+        "h": 8,
+        "w": 6,
+        "x": 0,
+        "y": 6
+      },
+      "datasource": {
+        "type": "grafana-clickhouse-datasource",
+        "uid": "PDEE91DDB90597936"
+      },
+      "targets": [
+        {
+          "expr": "sum(rate(http_requests_total{job=\"paystream-fastapi\"}[5m]))",
+          "legendFormat": "Requests/sec",
+          "datasource": {
+            "type": "grafana-clickhouse-datasource",
+            "uid": "PDEE91DDB90597936"
+          }
+        }
+      ]
+    },
+    {
+      "id": 4,
+      "title": "Feature Store Row Count",
+      "type": "stat",
+      "gridPos": {
+        "h": 8,
+        "w": 6,
+        "x": 6,
+        "y": 6
+      },
+      "datasource": {
+        "type": "grafana-clickhouse-datasource",
+        "uid": "PDEE91DDB90597936"
+      },
+      "targets": [
+        {
+          "rawSql": "SELECT count() AS row_count FROM feature_store.user_credit_features",
+          "format": "table",
+          "datasource": {
+            "type": "grafana-clickhouse-datasource",
+            "uid": "PDEE91DDB90597936"
+          }
+        }
+      ]
+    },
+    {
+      "id": 5,
+      "title": "Feature Version Distribution",
+      "type": "barchart",
+      "gridPos": {
+        "h": 8,
+        "w": 12,
+        "x": 12,
+        "y": 6
+      },
+      "datasource": {
+        "type": "grafana-clickhouse-datasource",
+        "uid": "PDEE91DDB90597936"
+      },
+      "targets": [
+        {
+          "rawSql": "SELECT feature_version, count() AS cnt FROM feature_store.user_credit_features GROUP BY feature_version ORDER BY feature_version",
+          "format": "table",
+          "datasource": {
+            "type": "grafana-clickhouse-datasource",
+            "uid": "PDEE91DDB90597936"
+          }
+        }
+      ]
+    }
+  ],
+  "id": null
 }
