@@ -198,6 +198,14 @@ resource "aws_security_group" "clickhouse" {
     security_groups = [aws_security_group.bastion.id]
   }
 
+  ingress {
+    description     = "Grafana from bastion (self-hosted, AMG N/A in eu-north-1)"
+    from_port       = 3000
+    to_port         = 3000
+    protocol        = "tcp"
+    security_groups = [aws_security_group.bastion.id]
+  }
+
   egress {
     from_port   = 0
     to_port     = 0

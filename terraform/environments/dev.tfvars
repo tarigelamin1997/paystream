@@ -19,7 +19,7 @@ bastion_instance_type = "t3.micro"
 
 # RDS
 rds_instance_class    = "db.t3.medium"
-rds_allocated_storage = 20
+rds_allocated_storage = 50
 rds_master_username   = "paystream_admin"
 
 # DocumentDB
