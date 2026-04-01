@@ -126,7 +126,7 @@
       },
       "targets": [
         {
-          "rawSql": "SELECT feature_name, drift_score, if(drift_score > 'EXCEEDED', 'OK') AS status FROM feature_store.drift_metrics WHERE measured_at = (SELECT max(measured_at) FROM feature_store.drift_metrics) ORDER BY drift_score DESC",
+          "rawSql": "SELECT feature_name, drift_score, if(drift_score > 3.0, 'EXCEEDED', 'OK') AS status FROM feature_store.drift_metrics WHERE measured_at = (SELECT max(measured_at) FROM feature_store.drift_metrics) ORDER BY drift_score DESC",
           "format": 1,
           "datasource": {
             "type": "grafana-clickhouse-datasource",
