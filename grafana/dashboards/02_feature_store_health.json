@@ -35,11 +35,13 @@
       "targets": [
         {
           "rawSql": "SELECT max(_ingested_at) AS last_update FROM feature_store.user_credit_features",
-          "format": "table",
+          "format": 1,
           "datasource": {
             "type": "grafana-clickhouse-datasource",
             "uid": "PDEE91DDB90597936"
-          }
+          },
+          "editorType": "sql",
+          "queryType": "sql"
         }
       ]
     },
@@ -64,7 +66,9 @@
           "datasource": {
             "type": "grafana-clickhouse-datasource",
             "uid": "PDEE91DDB90597936"
-          }
+          },
+          "editorType": "sql",
+          "queryType": "sql"
         }
       ]
     },
@@ -89,7 +93,9 @@
           "datasource": {
             "type": "grafana-clickhouse-datasource",
             "uid": "PDEE91DDB90597936"
-          }
+          },
+          "editorType": "sql",
+          "queryType": "sql"
         }
       ]
     },
@@ -110,11 +116,13 @@
       "targets": [
         {
           "rawSql": "SELECT count() AS row_count FROM feature_store.user_credit_features",
-          "format": "table",
+          "format": 1,
           "datasource": {
             "type": "grafana-clickhouse-datasource",
             "uid": "PDEE91DDB90597936"
-          }
+          },
+          "editorType": "sql",
+          "queryType": "sql"
         }
       ]
     },
@@ -135,11 +143,13 @@
       "targets": [
         {
           "rawSql": "SELECT feature_version, count() AS cnt FROM feature_store.user_credit_features GROUP BY feature_version ORDER BY feature_version",
-          "format": "table",
+          "format": 1,
           "datasource": {
             "type": "grafana-clickhouse-datasource",
             "uid": "PDEE91DDB90597936"
-          }
+          },
+          "editorType": "sql",
+          "queryType": "sql"
         }
       ]
     }

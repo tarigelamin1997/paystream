@@ -30,11 +30,13 @@
       "targets": [
         {
           "rawSql": "SELECT database, round(sum(data_compressed_bytes) / 1048576, 2) AS compressed_mb, round(sum(data_uncompressed_bytes) / 1048576, 2) AS uncompressed_mb FROM system.parts WHERE active AND database IN ('bronze', 'silver', 'gold', 'feature_store') GROUP BY database ORDER BY compressed_mb DESC",
-          "format": "table",
+          "format": 1,
           "datasource": {
             "type": "grafana-clickhouse-datasource",
             "uid": "PDEE91DDB90597936"
-          }
+          },
+          "editorType": "sql",
+          "queryType": "sql"
         }
       ]
     },
@@ -55,11 +57,13 @@
       "targets": [
         {
           "rawSql": "SELECT type, query, round(read_bytes / 1048576, 2) AS read_mb, round(query_duration_ms / 1000, 2) AS duration_sec FROM system.query_log WHERE event_time >= now() - INTERVAL 24 HOUR AND type = 'QueryFinish' ORDER BY read_bytes DESC LIMIT 10",
-          "format": "table",
+          "format": 1,
           "datasource": {
             "type": "grafana-clickhouse-datasource",
             "uid": "PDEE91DDB90597936"
-          }
+          },
+          "editorType": "sql",
+          "queryType": "sql"
         }
       ]
     },
@@ -85,11 +89,13 @@
       "targets": [
         {
           "rawSql": "SELECT 0 AS spark_hours",
-          "format": "table",
+          "format": 1,
           "datasource": {
             "type": "grafana-clickhouse-datasource",
             "uid": "PDEE91DDB90597936"
-          }
+          },
+          "editorType": "sql",
+          "queryType": "sql"
         }
       ]
     },
@@ -114,7 +120,9 @@
           "datasource": {
             "type": "grafana-clickhouse-datasource",
             "uid": "PDEE91DDB90597936"
-          }
+          },
+          "editorType": "sql",
+          "queryType": "sql"
         }
       ]
     },
@@ -135,11 +143,13 @@
       "targets": [
         {
           "rawSql": "SELECT engine, count() AS table_count FROM system.tables WHERE database IN ('bronze', 'silver', 'gold', 'feature_store') GROUP BY engine ORDER BY table_count DESC",
-          "format": "table",
+          "format": 1,
           "datasource": {
             "type": "grafana-clickhouse-datasource",
             "uid": "PDEE91DDB90597936"
-          }
+          },
+          "editorType": "sql",
+          "queryType": "sql"
         }
       ]
     }

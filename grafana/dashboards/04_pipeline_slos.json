@@ -46,11 +46,13 @@
       "targets": [
         {
           "rawSql": "SELECT dateDiff('second', max(_ingested_at), now()) AS seconds_since_last FROM bronze.pg_transactions_raw",
-          "format": "table",
+          "format": 1,
           "datasource": {
             "type": "grafana-clickhouse-datasource",
             "uid": "PDEE91DDB90597936"
-          }
+          },
+          "editorType": "sql",
+          "queryType": "sql"
         }
       ]
     },
@@ -71,11 +73,13 @@
       "targets": [
         {
           "rawSql": "SELECT status, count() AS cnt FROM gold.dbt_test_results WHERE run_started_at >= now() - INTERVAL 24 HOUR GROUP BY status ORDER BY cnt DESC LIMIT 1",
-          "format": "table",
+          "format": 1,
           "datasource": {
             "type": "grafana-clickhouse-datasource",
             "uid": "PDEE91DDB90597936"
-          }
+          },
+          "editorType": "sql",
+          "queryType": "sql"
         }
       ]
     },
@@ -101,11 +105,13 @@
       "targets": [
         {
           "rawSql": "SELECT max(_ingested_at) AS last_gold_update FROM gold.merchant_daily_kpis",
-          "format": "table",
+          "format": 1,
           "datasource": {
             "type": "grafana-clickhouse-datasource",
             "uid": "PDEE91DDB90597936"
-          }
+          },
+          "editorType": "sql",
+          "queryType": "sql"
         }
       ]
     },
@@ -131,11 +137,13 @@
       "targets": [
         {
           "rawSql": "SELECT max(_ingested_at) AS last_feature_update FROM feature_store.user_credit_features",
-          "format": "table",
+          "format": 1,
           "datasource": {
             "type": "grafana-clickhouse-datasource",
             "uid": "PDEE91DDB90597936"
-          }
+          },
+          "editorType": "sql",
+          "queryType": "sql"
         }
       ]
     },
@@ -156,11 +164,13 @@
       "targets": [
         {
           "rawSql": "SELECT status, count() AS cnt FROM gold.settlement_reconciliation WHERE settlement_date = today() GROUP BY status",
-          "format": "table",
+          "format": 1,
           "datasource": {
             "type": "grafana-clickhouse-datasource",
             "uid": "PDEE91DDB90597936"
-          }
+          },
+          "editorType": "sql",
+          "queryType": "sql"
         }
       ]
     },
@@ -181,11 +191,13 @@
       "targets": [
         {
           "rawSql": "SELECT 'Feature Store freshness' AS slo, '< 6 hours' AS target, toString(dateDiff('hour', max_fs, now())) || ' hours' AS measured, if(dateDiff('hour', max_fs, now()) < 6, 'MET', 'BREACHED') AS status FROM (SELECT max(_ingested_at) AS max_fs FROM feature_store.user_credit_features) UNION ALL SELECT 'Gold layer freshness', '< 25 hours', toString(dateDiff('hour', max_g, now())) || ' hours', if(dateDiff('hour', max_g, now()) < 25, 'MET', 'BREACHED') FROM (SELECT max(_ingested_at) AS max_g FROM gold.merchant_daily_kpis) UNION ALL SELECT 'Ingestion latency', '< 30 seconds', toString(dateDiff('second', max_b, now())) || ' sec', if(dateDiff('second', max_b, now()) < 30, 'MET', 'BREACHED') FROM (SELECT max(_ingested_at) AS max_b FROM bronze.pg_transactions_raw)",
-          "format": "table",
+          "format": 1,
           "datasource": {
             "type": "grafana-clickhouse-datasource",
             "uid": "PDEE91DDB90597936"
-          }
+          },
+          "editorType": "sql",
+          "queryType": "sql"
         }
       ]
     }
