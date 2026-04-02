@@ -104,7 +104,7 @@
       },
       "targets": [
         {
-          "rawSql": "SELECT max(_ingested_at) AS last_gold_update FROM gold.merchant_daily_kpis",
+          "rawSql": "SELECT max(modification_time) AS last_gold_update FROM system.parts WHERE database = 'gold' AND active",
           "format": 1,
           "datasource": {
             "type": "grafana-clickhouse-datasource",
@@ -136,7 +136,7 @@
       },
       "targets": [
         {
-          "rawSql": "SELECT max(_ingested_at) AS last_feature_update, dateDiff('hour', max(_ingested_at), now()) AS hours_since FROM feature_store.user_credit_features",
+          "rawSql": "SELECT max(_ingested_at) AS last_feature_update, dateDiff('hour', max(_ingested_at), now()) AS hours_since_update FROM feature_store.user_credit_features",
           "format": 1,
           "datasource": {
             "type": "grafana-clickhouse-datasource",
@@ -163,7 +163,7 @@
       },
       "targets": [
         {
-          "rawSql": "SELECT settlement_date, count() AS merchants, countIf(status = 'matched') AS matched, countIf(status = 'mismatch') AS mismatches FROM gold.settlement_reconciliation GROUP BY settlement_date ORDER BY settlement_date DESC LIMIT 5",
+          "rawSql": "SELECT settlement_date, count() AS merchants, countIf(status = 'matched') AS matched, countIf(status = 'mismatch') AS mismatches, avg(variance_pct) AS avg_variance_pct FROM gold.settlement_reconciliation GROUP BY settlement_date ORDER BY settlement_date DESC LIMIT 5",
           "format": 1,
           "datasource": {
             "type": "grafana-clickhouse-datasource",
