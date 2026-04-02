@@ -29,7 +29,7 @@
       },
       "targets": [
         {
-          "rawSql": "SELECT measured_at AS ts, feature_name, drift_score FROM feature_store.drift_metrics WHERE measured_at >= now() - INTERVAL 7 DAY ORDER BY ts",
+          "rawSql": "SELECT measured_at AS time, feature_name, drift_score FROM feature_store.drift_metrics ORDER BY measured_at",
           "format": 0,
           "datasource": {
             "type": "grafana-clickhouse-datasource",
@@ -72,7 +72,7 @@
       },
       "targets": [
         {
-          "rawSql": "SELECT count() AS drifted_features FROM feature_store.drift_metrics WHERE is_drifted = 1 AND measured_at >= now() - INTERVAL 1 HOUR",
+          "rawSql": "SELECT count() AS drifted_features FROM feature_store.drift_metrics WHERE is_drifted = 1 AND measured_at = (SELECT max(measured_at) FROM feature_store.drift_metrics)",
           "format": 1,
           "datasource": {
             "type": "grafana-clickhouse-datasource",
@@ -99,7 +99,7 @@
       },
       "targets": [
         {
-          "rawSql": "SELECT feature_name, baseline_median, current_median, abs(current_median - baseline_median) AS delta FROM feature_store.drift_metrics WHERE measured_at = (SELECT max(measured_at) FROM feature_store.drift_metrics) ORDER BY delta DESC",
+          "rawSql": "SELECT feature_name, baseline_median, current_median FROM feature_store.drift_metrics WHERE measured_at = (SELECT max(measured_at) FROM feature_store.drift_metrics)",
           "format": 1,
           "datasource": {
             "type": "grafana-clickhouse-datasource",

@@ -29,7 +29,7 @@
       },
       "targets": [
         {
-          "rawSql": "SELECT m.name AS merchant, sum(t.total_amount) AS gmv FROM silver.transactions_silver t JOIN silver.merchants_silver m ON t.merchant_id = m.merchant_id WHERE t._ingested_at >= now() - INTERVAL 24 HOUR GROUP BY merchant ORDER BY gmv DESC LIMIT 20",
+          "rawSql": "SELECT merchant_id, merchant_category, gmv, transaction_count, approval_rate FROM gold.merchant_daily_kpis ORDER BY gmv DESC",
           "format": 1,
           "datasource": {
             "type": "grafana-clickhouse-datasource",
@@ -56,8 +56,8 @@
       },
       "targets": [
         {
-          "rawSql": "SELECT toStartOfHour(_ingested_at) AS ts, countIf(status = 'approved') * 100.0 / count() AS approval_rate FROM silver.transactions_silver WHERE _ingested_at >= now() - INTERVAL 24 HOUR GROUP BY ts ORDER BY ts",
-          "format": 0,
+          "rawSql": "SELECT merchant_id, date, approval_rate FROM gold.merchant_daily_kpis ORDER BY merchant_id, date",
+          "format": 1,
           "datasource": {
             "type": "grafana-clickhouse-datasource",
             "uid": "PDEE91DDB90597936"
@@ -106,7 +106,7 @@
       },
       "targets": [
         {
-          "rawSql": "SELECT countIf(status = 'approved') * 100.0 / count() AS bnpl_penetration FROM silver.transactions_silver WHERE _ingested_at >= now() - INTERVAL 24 HOUR",
+          "rawSql": "SELECT avg(bnpl_penetration) AS avg_bnpl FROM gold.merchant_daily_kpis",
           "format": 1,
           "datasource": {
             "type": "grafana-clickhouse-datasource",
@@ -133,7 +133,7 @@
       },
       "targets": [
         {
-          "rawSql": "SELECT quantile(0.95)(decision_latency_ms) AS p95_latency FROM silver.transactions_silver WHERE _ingested_at >= now() - INTERVAL 24 HOUR",
+          "rawSql": "SELECT quantile(0.50)(decision_latency_ms) AS p50, quantile(0.95)(decision_latency_ms) AS p95, quantile(0.99)(decision_latency_ms) AS p99 FROM silver.transactions_silver WHERE _ingested_at > now() - INTERVAL 24 HOUR",
           "format": 1,
           "datasource": {
             "type": "grafana-clickhouse-datasource",
@@ -160,7 +160,7 @@
       },
       "targets": [
         {
-          "rawSql": "SELECT m.name AS merchant, count() AS txn_count, sum(t.total_amount) AS total_gmv, countIf(t.status = 'approved') * 100.0 / count() AS approval_pct FROM silver.transactions_silver t JOIN silver.merchants_silver m ON t.merchant_id = m.merchant_id WHERE t._ingested_at >= now() - INTERVAL 24 HOUR GROUP BY merchant ORDER BY txn_count DESC LIMIT 10",
+          "rawSql": "SELECT merchant_id, sum(gmv) AS total_gmv FROM gold.merchant_daily_kpis GROUP BY merchant_id ORDER BY total_gmv DESC LIMIT 10",
           "format": 1,
           "datasource": {
             "type": "grafana-clickhouse-datasource",

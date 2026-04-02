@@ -68,7 +68,9 @@
             "uid": "PDEE91DDB90597936"
           },
           "editorType": "sql",
-          "queryType": "sql"
+          "queryType": "sql",
+          "rawSql": "SELECT toStartOfMinute(event_time) AS time, quantile(0.99)(query_duration_ms) AS p99_ms FROM system.query_log WHERE query LIKE '%feature_store%' AND type = 'QueryFinish' AND event_time >= now() - INTERVAL 24 HOUR GROUP BY time ORDER BY time",
+          "format": 0
         }
       ]
     },
@@ -95,7 +97,9 @@
             "uid": "PDEE91DDB90597936"
           },
           "editorType": "sql",
-          "queryType": "sql"
+          "queryType": "sql",
+          "rawSql": "SELECT toStartOfMinute(event_time) AS time, count() AS requests FROM system.query_log WHERE query LIKE '%feature_store%' AND type = 'QueryFinish' AND event_time >= now() - INTERVAL 24 HOUR GROUP BY time ORDER BY time",
+          "format": 0
         }
       ]
     },
@@ -115,7 +119,7 @@
       },
       "targets": [
         {
-          "rawSql": "SELECT count() AS row_count FROM feature_store.user_credit_features",
+          "rawSql": "SELECT count() AS total_rows FROM feature_store.user_credit_features",
           "format": 1,
           "datasource": {
             "type": "grafana-clickhouse-datasource",
@@ -142,7 +146,7 @@
       },
       "targets": [
         {
-          "rawSql": "SELECT feature_version, count() AS cnt FROM feature_store.user_credit_features GROUP BY feature_version ORDER BY feature_version",
+          "rawSql": "SELECT feature_version, count() AS cnt FROM feature_store.user_credit_features GROUP BY feature_version ORDER BY cnt DESC",
           "format": 1,
           "datasource": {
             "type": "grafana-clickhouse-datasource",

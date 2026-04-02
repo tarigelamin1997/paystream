@@ -29,7 +29,7 @@
       },
       "targets": [
         {
-          "rawSql": "SELECT database, round(sum(data_compressed_bytes) / 1048576, 2) AS compressed_mb, round(sum(data_uncompressed_bytes) / 1048576, 2) AS uncompressed_mb FROM system.parts WHERE active AND database IN ('bronze', 'silver', 'gold', 'feature_store') GROUP BY database ORDER BY compressed_mb DESC",
+          "rawSql": "SELECT database, formatReadableSize(sum(bytes_on_disk)) AS disk_usage, sum(rows) AS total_rows FROM system.parts WHERE active GROUP BY database ORDER BY sum(bytes_on_disk) DESC",
           "format": 1,
           "datasource": {
             "type": "grafana-clickhouse-datasource",
@@ -56,7 +56,7 @@
       },
       "targets": [
         {
-          "rawSql": "SELECT type, query, round(read_bytes / 1048576, 2) AS read_mb, round(query_duration_ms / 1000, 2) AS duration_sec FROM system.query_log WHERE event_time >= now() - INTERVAL 24 HOUR AND type = 'QueryFinish' ORDER BY read_bytes DESC LIMIT 10",
+          "rawSql": "SELECT merchant_id, sum(gmv) AS total_gmv FROM gold.merchant_daily_kpis GROUP BY merchant_id ORDER BY total_gmv DESC LIMIT 10",
           "format": 1,
           "datasource": {
             "type": "grafana-clickhouse-datasource",
@@ -88,7 +88,7 @@
       },
       "targets": [
         {
-          "rawSql": "SELECT 0 AS spark_hours",
+          "rawSql": "SELECT 0 AS executor_hours",
           "format": 1,
           "datasource": {
             "type": "grafana-clickhouse-datasource",
@@ -122,7 +122,9 @@
             "uid": "PDEE91DDB90597936"
           },
           "editorType": "sql",
-          "queryType": "sql"
+          "queryType": "sql",
+          "rawSql": "SELECT toStartOfHour(event_time) AS time, count() AS queries FROM system.query_log WHERE query LIKE '%feature_store%' AND type = 'QueryFinish' AND event_time >= now() - INTERVAL 24 HOUR GROUP BY time ORDER BY time",
+          "format": 0
         }
       ]
     },
@@ -142,7 +144,7 @@
       },
       "targets": [
         {
-          "rawSql": "SELECT engine, count() AS table_count FROM system.tables WHERE database IN ('bronze', 'silver', 'gold', 'feature_store') GROUP BY engine ORDER BY table_count DESC",
+          "rawSql": "SELECT database, engine, count() AS table_count FROM system.tables WHERE database IN ('bronze','silver','gold','feature_store') GROUP BY database, engine ORDER BY database, engine",
           "format": 1,
           "datasource": {
             "type": "grafana-clickhouse-datasource",
