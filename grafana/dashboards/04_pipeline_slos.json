@@ -54,7 +54,9 @@
           "editorType": "sql",
           "queryType": "sql"
         }
-      ]
+      ],
+      "timeFrom": null,
+      "timeShift": null
     },
     {
       "id": 2,
@@ -81,7 +83,9 @@
           "editorType": "sql",
           "queryType": "sql"
         }
-      ]
+      ],
+      "timeFrom": null,
+      "timeShift": null
     },
     {
       "id": 3,
@@ -113,7 +117,9 @@
           "editorType": "sql",
           "queryType": "sql"
         }
-      ]
+      ],
+      "timeFrom": null,
+      "timeShift": null
     },
     {
       "id": 4,
@@ -145,7 +151,9 @@
           "editorType": "sql",
           "queryType": "sql"
         }
-      ]
+      ],
+      "timeFrom": null,
+      "timeShift": null
     },
     {
       "id": 5,
@@ -172,7 +180,9 @@
           "editorType": "sql",
           "queryType": "sql"
         }
-      ]
+      ],
+      "timeFrom": null,
+      "timeShift": null
     },
     {
       "id": 6,
