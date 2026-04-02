@@ -72,7 +72,7 @@
       },
       "targets": [
         {
-          "rawSql": "SELECT count() AS drifted_features FROM feature_store.drift_metrics WHERE is_drifted = 1 AND measured_at = (SELECT max(measured_at) FROM feature_store.drift_metrics)",
+          "rawSql": "SELECT now() AS time, count() AS drifted_features FROM feature_store.drift_metrics WHERE is_drifted = 1 AND measured_at = (SELECT max(measured_at) FROM feature_store.drift_metrics)",
           "format": 1,
           "datasource": {
             "type": "grafana-clickhouse-datasource",
@@ -158,7 +158,7 @@
       },
       "targets": [
         {
-          "rawSql": "SELECT max(measured_at) AS last_drift FROM feature_store.drift_metrics WHERE is_drifted = 1",
+          "rawSql": "SELECT now() AS time, max(measured_at) AS last_drift FROM feature_store.drift_metrics WHERE is_drifted = 1",
           "format": 1,
           "datasource": {
             "type": "grafana-clickhouse-datasource",

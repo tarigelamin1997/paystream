@@ -88,7 +88,7 @@
       },
       "targets": [
         {
-          "rawSql": "SELECT 0 AS executor_hours",
+          "rawSql": "SELECT now() AS time, 0 AS executor_hours",
           "format": 1,
           "datasource": {
             "type": "grafana-clickhouse-datasource",

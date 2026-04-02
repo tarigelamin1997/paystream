@@ -34,7 +34,7 @@
       },
       "targets": [
         {
-          "rawSql": "SELECT max(_ingested_at) AS last_update FROM feature_store.user_credit_features",
+          "rawSql": "SELECT now() AS time, max(_ingested_at) AS last_update FROM feature_store.user_credit_features",
           "format": 1,
           "datasource": {
             "type": "grafana-clickhouse-datasource",
@@ -119,7 +119,7 @@
       },
       "targets": [
         {
-          "rawSql": "SELECT count() AS total_rows FROM feature_store.user_credit_features",
+          "rawSql": "SELECT now() AS time, count() AS total_rows FROM feature_store.user_credit_features",
           "format": 1,
           "datasource": {
             "type": "grafana-clickhouse-datasource",
