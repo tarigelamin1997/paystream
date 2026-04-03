@@ -1,6 +1,8 @@
 from airflow import DAG
 from airflow.operators.bash import BashOperator
+from airflow.operators.python import PythonOperator
 from airflow.operators.trigger_dagrun import TriggerDagRunOperator
+from utils.audit_logger import write_dag_audit_log
 from datetime import datetime
 
 with DAG(
@@ -20,4 +22,9 @@ with DAG(
         trigger_dag_id='feature_pipeline',
         wait_for_completion=False,
     )
-    dbt_build >> trigger_features
+    audit = PythonOperator(
+        task_id='write_audit_log',
+        python_callable=write_dag_audit_log,
+        trigger_rule='all_done',
+    )
+    dbt_build >> trigger_features >> audit

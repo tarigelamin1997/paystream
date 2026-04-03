@@ -1,7 +1,8 @@
 from airflow import DAG
-from airflow.operators.python import ShortCircuitOperator
+from airflow.operators.python import PythonOperator, ShortCircuitOperator
 from airflow.operators.bash import BashOperator
 from utils.clickhouse_hook import execute_clickhouse_query
+from utils.audit_logger import write_dag_audit_log
 from datetime import datetime
 
 def check_new_data(**context):
@@ -30,4 +31,9 @@ with DAG(
         task_id='dbt_snapshot',
         bash_command='cd /usr/local/airflow/dbt && dbt snapshot --target prod --profiles-dir .',
     )
-    check >> snapshot
+    audit = PythonOperator(
+        task_id='write_audit_log',
+        python_callable=write_dag_audit_log,
+        trigger_rule='all_done',
+    )
+    check >> snapshot >> audit

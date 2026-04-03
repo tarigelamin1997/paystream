@@ -1,6 +1,7 @@
 from airflow import DAG
 from airflow.operators.python import PythonOperator
 from utils.clickhouse_hook import execute_clickhouse_query
+from utils.audit_logger import write_dag_audit_log
 from datetime import datetime, timedelta
 import logging
 
@@ -69,4 +70,9 @@ with DAG(
         task_id='reconcile_and_insert',
         python_callable=reconcile_and_insert,
     )
-    compute >> reconcile
+    audit = PythonOperator(
+        task_id='write_audit_log',
+        python_callable=write_dag_audit_log,
+        trigger_rule='all_done',
+    )
+    compute >> reconcile >> audit

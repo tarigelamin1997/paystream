@@ -1,5 +1,6 @@
 from airflow import DAG
 from airflow.operators.python import PythonOperator
+from utils.audit_logger import write_dag_audit_log
 from datetime import datetime
 
 FEATURE_NAMES = [
@@ -56,4 +57,10 @@ with DAG(
     max_active_runs=1,
     tags=['feature-store', 'drift'],
 ) as dag:
-    PythonOperator(task_id='detect_and_write_drift', python_callable=detect_and_write_drift)
+    drift_task = PythonOperator(task_id='detect_and_write_drift', python_callable=detect_and_write_drift)
+    audit = PythonOperator(
+        task_id='write_audit_log',
+        python_callable=write_dag_audit_log,
+        trigger_rule='all_done',
+    )
+    drift_task >> audit

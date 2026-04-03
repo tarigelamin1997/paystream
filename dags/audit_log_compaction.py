@@ -1,5 +1,6 @@
 from airflow import DAG
 from airflow.operators.python import PythonOperator
+from utils.audit_logger import write_dag_audit_log
 from datetime import datetime, timedelta
 import boto3
 
@@ -27,7 +28,13 @@ with DAG(
     max_active_runs=1,
     tags=['s3', 'maintenance'],
 ) as dag:
-    PythonOperator(
+    cleanup = PythonOperator(
         task_id='cleanup_old_audit_files',
         python_callable=cleanup_old_audit_files,
     )
+    audit = PythonOperator(
+        task_id='write_audit_log',
+        python_callable=write_dag_audit_log,
+        trigger_rule='all_done',
+    )
+    cleanup >> audit

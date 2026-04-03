@@ -11,6 +11,7 @@ from airflow.operators.bash import BashOperator
 from airflow.operators.empty import EmptyOperator
 from airflow.operators.python import PythonOperator, ShortCircuitOperator
 from utils.clickhouse_hook import execute_clickhouse_query
+from utils.audit_logger import write_dag_audit_log
 from datetime import datetime, timedelta
 import json
 import re
@@ -205,7 +206,13 @@ with DAG(
         task_id="dq_complete",
     )
 
+    audit = PythonOperator(
+        task_id="write_audit_log",
+        python_callable=write_dag_audit_log,
+        trigger_rule="all_done",
+    )
+
     # Dependencies
     run_dbt_tests >> write_dbt_results
     [write_dbt_results, fs_completeness, fs_nulls] >> quality_gate
-    quality_gate >> dq_complete
+    quality_gate >> dq_complete >> audit

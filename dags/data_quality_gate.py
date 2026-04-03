@@ -2,6 +2,7 @@ from airflow import DAG
 from airflow.operators.bash import BashOperator
 from airflow.operators.python import PythonOperator
 from utils.clickhouse_hook import execute_clickhouse_query
+from utils.audit_logger import write_dag_audit_log
 from datetime import datetime
 import json
 
@@ -38,4 +39,9 @@ with DAG(
         task_id='write_test_results',
         python_callable=write_test_results_to_clickhouse,
     )
-    freshness >> test >> write_results
+    audit = PythonOperator(
+        task_id='write_audit_log',
+        python_callable=write_dag_audit_log,
+        trigger_rule='all_done',
+    )
+    freshness >> test >> write_results >> audit

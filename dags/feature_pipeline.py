@@ -2,6 +2,7 @@ from airflow import DAG
 from airflow.operators.python import PythonOperator
 from airflow.operators.bash import BashOperator
 from utils.clickhouse_hook import execute_clickhouse_query
+from utils.audit_logger import write_dag_audit_log
 from datetime import datetime
 
 def run_ge_validation(**context):
@@ -45,4 +46,9 @@ with DAG(
     verify_fs = PythonOperator(
         task_id='verify_feature_store', python_callable=verify_feature_store,
     )
-    ge_gate >> compute >> verify_fs
+    audit = PythonOperator(
+        task_id='write_audit_log',
+        python_callable=write_dag_audit_log,
+        trigger_rule='all_done',
+    )
+    ge_gate >> compute >> verify_fs >> audit
