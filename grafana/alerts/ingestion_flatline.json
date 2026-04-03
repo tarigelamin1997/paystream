@@ -12,7 +12,7 @@
   "data": [
     {
       "refId": "A",
-      "datasourceUid": "clickhouse",
+      "datasourceUid": "PDEE91DDB90597936",
       "model": {
         "rawSql": "SELECT count() AS recent_rows FROM bronze.pg_transactions_raw WHERE _ingested_at >= now() - INTERVAL 5 MINUTE",
         "format": "table"

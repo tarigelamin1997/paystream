@@ -12,7 +12,7 @@
   "data": [
     {
       "refId": "A",
-      "datasourceUid": "clickhouse",
+      "datasourceUid": "PDEE91DDB90597936",
       "model": {
         "rawSql": "SELECT count() AS drifted FROM feature_store.drift_metrics WHERE is_drifted = 1 AND measured_at > now() - INTERVAL 1 HOUR",
         "format": "table"

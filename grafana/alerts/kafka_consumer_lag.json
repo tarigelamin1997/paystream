@@ -1,20 +1,20 @@
 {
-  "title": "Feature Pipeline Stale (> 6 hours)",
+  "title": "Bronze Ingestion Lag (> 60 min)",
   "ruleGroup": "paystream-alerts",
   "folderUID": "paystream",
   "condition": "C",
   "for": "5m",
-  "labels": { "severity": "critical", "team": "paystream" },
+  "labels": { "severity": "warning", "team": "paystream" },
   "annotations": {
-    "summary": "Feature store has not been updated in over 6 hours",
-    "description": "The latest _ingested_at in feature_store.user_credit_features is older than 6 hours."
+    "summary": "Bronze ingestion lag exceeds 60 minutes",
+    "description": "No new data ingested into bronze.pg_transactions_raw for over 60 minutes. Possible Kafka consumer or Debezium issue."
   },
   "data": [
     {
       "refId": "A",
       "datasourceUid": "PDEE91DDB90597936",
       "model": {
-        "rawSql": "SELECT dateDiff('hour', max(_ingested_at), now()) AS hours_stale FROM feature_store.user_credit_features",
+        "rawSql": "SELECT dateDiff('minute', max(_ingested_at), now()) AS lag_minutes FROM bronze.pg_transactions_raw",
         "format": "table"
       }
     },
@@ -34,7 +34,7 @@
         "type": "threshold",
         "expression": "B",
         "conditions": [
-          { "evaluator": { "type": "gt", "params": [6] } }
+          { "evaluator": { "type": "gt", "params": [60] } }
         ]
       }
     }

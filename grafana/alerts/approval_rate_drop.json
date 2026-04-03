@@ -12,7 +12,7 @@
   "data": [
     {
       "refId": "A",
-      "datasourceUid": "clickhouse",
+      "datasourceUid": "PDEE91DDB90597936",
       "model": {
         "rawSql": "SELECT baseline_rate - current_rate AS rate_drop FROM (SELECT countIf(status = 'approved') * 100.0 / count() AS baseline_rate FROM silver.transactions_silver WHERE _ingested_at >= now() - INTERVAL 24 HOUR) AS b, (SELECT countIf(status = 'approved') * 100.0 / count() AS current_rate FROM silver.transactions_silver WHERE _ingested_at >= now() - INTERVAL 1 HOUR) AS c",
         "format": "table"
