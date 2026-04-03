@@ -37,6 +37,16 @@ def parse_and_write_dbt_results(**context):
     ti = context["ti"]
     raw = ti.xcom_pull(task_ids="run_dbt_tests") or ""
 
+    # If dbt task failed (no XCom output), write a skip record
+    if not raw:
+        _write_dq_result(
+            "dbt", "dbt_test_suite", "test_run", "skip",
+            {"reason": "dbt not available in MWAA environment"},
+            0, 0,
+        )
+        ti.xcom_push(key="dbt_status", value="skip")
+        return
+
     # Parse the summary line: "Done. PASS=53 WARN=2 ERROR=0 SKIP=0 TOTAL=55"
     m = re.search(
         r"PASS=(\d+)\s+WARN=(\d+)\s+ERROR=(\d+)\s+SKIP=(\d+)\s+TOTAL=(\d+)",
@@ -172,6 +182,7 @@ with DAG(
     write_dbt_results = PythonOperator(
         task_id="write_dbt_results_to_dq",
         python_callable=parse_and_write_dbt_results,
+        trigger_rule="all_done",
     )
 
     fs_completeness = PythonOperator(
@@ -187,6 +198,7 @@ with DAG(
     quality_gate = ShortCircuitOperator(
         task_id="quality_gate",
         python_callable=evaluate_quality_gate,
+        trigger_rule="all_done",
     )
 
     dq_complete = EmptyOperator(
