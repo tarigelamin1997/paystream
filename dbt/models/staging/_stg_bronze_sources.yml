@@ -1,0 +1,45 @@
+version: 2
+sources:
+  - name: bronze
+    database: bronze
+    schema: ''
+    freshness:
+      warn_after: {count: 6, period: hour}
+      error_after: {count: 24, period: hour}
+    loaded_at_field: _ingested_at
+    tables:
+      - name: pg_transactions_raw
+        columns:
+          - name: transaction_id
+            data_tests:
+              - not_null
+      - name: pg_users_raw
+        columns:
+          - name: user_id
+            data_tests:
+              - not_null
+      - name: pg_merchants_raw
+        columns:
+          - name: merchant_id
+            data_tests:
+              - not_null
+      - name: pg_repayments_raw
+        columns:
+          - name: repayment_id
+            data_tests:
+              - not_null
+      - name: pg_installments_raw
+        columns:
+          - name: schedule_id
+            data_tests:
+              - not_null
+      - name: mongo_app_events_raw
+        columns:
+          - name: event_id
+            data_tests:
+              - not_null
+      - name: mongo_merchant_sessions_raw
+        columns:
+          - name: session_id
+            data_tests:
+              - not_null
