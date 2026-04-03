@@ -10,9 +10,9 @@
 
 
 
-select gmv
-from `gold`.`merchant_daily_kpis`
-where gmv is null
+select currency
+from `silver`.`transactions_silver`
+where currency is null
 
 
 

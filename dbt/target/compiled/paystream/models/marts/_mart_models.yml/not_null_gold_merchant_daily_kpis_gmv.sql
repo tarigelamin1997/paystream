@@ -5,7 +5,7 @@
 
 
 select gmv
-from `gold`.`gold_merchant_daily_kpis`
+from `gold`.`merchant_daily_kpis`
 where gmv is null
 
 

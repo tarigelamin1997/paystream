@@ -13,4 +13,6 @@ SELECT
     if(count() > 0, countIf(installment_count > 1) / count(), 0) AS bnpl_penetration
 FROM `silver`.`int_transaction_enriched` te
 
+WHERE toDate(created_at) >= (SELECT max(date) - INTERVAL 3 DAY FROM `gold`.`merchant_daily_kpis`)
+
 GROUP BY merchant_id, merchant_category, toDate(created_at)

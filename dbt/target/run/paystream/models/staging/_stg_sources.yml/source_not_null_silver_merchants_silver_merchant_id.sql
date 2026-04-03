@@ -10,9 +10,9 @@
 
 
 
-select gmv
-from `gold`.`merchant_daily_kpis`
-where gmv is null
+select merchant_id
+from `silver`.`merchants_silver`
+where merchant_id is null
 
 
 

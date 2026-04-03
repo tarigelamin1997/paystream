@@ -57,3 +57,5 @@ SELECT
     coalesce(o.overdue_rate, 0) AS overdue_rate
 FROM daily_metrics dm
 LEFT JOIN overdue o ON dm.date = o.date
+
+WHERE dm.date >= (SELECT max(date) - INTERVAL 3 DAY FROM `gold`.`risk_dashboard`)

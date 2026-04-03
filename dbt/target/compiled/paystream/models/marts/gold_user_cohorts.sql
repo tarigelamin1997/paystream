@@ -25,3 +25,5 @@ WHERE status != 'cancelled'
     if(count() > 1, toFloat32((count() - 1)) / toFloat32(count()), toFloat32(0)) AS reorder_rate
 FROM `__dbt__cte__stg_transactions`
 GROUP BY user_id
+
+HAVING toStartOfMonth(min(created_at)) >= (SELECT max(cohort_month) - INTERVAL 3 MONTH FROM `gold`.`user_cohorts`)

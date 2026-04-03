@@ -46,3 +46,5 @@ SELECT
     ) AS status
 FROM daily_tx dt
 LEFT JOIN daily_repay dr ON dt.settlement_date = dr.settlement_date AND dt.merchant_id = dr.merchant_id
+
+WHERE dt.settlement_date >= (SELECT max(settlement_date) - INTERVAL 3 DAY FROM `gold`.`settlement_reconciliation`)
