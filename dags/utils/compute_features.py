@@ -29,6 +29,109 @@ def ch_execute(sql):
         raise Exception(f"ClickHouse error {resp.status_code}: {resp.text[:500]}")
 
 
+FEATURE_COLUMNS = [
+    "tx_velocity_7d", "tx_velocity_30d", "avg_tx_amount_30d",
+    "merchant_diversity_30d", "declined_rate_7d", "repayment_rate_90d",
+    "active_installments", "days_since_first_tx",
+]
+
+# Columns that must be >= 0 (counts, amounts, durations)
+NON_NEGATIVE_COLUMNS = [
+    "tx_velocity_7d", "tx_velocity_30d", "avg_tx_amount_30d",
+    "merchant_diversity_30d", "active_installments", "days_since_first_tx",
+]
+
+# Columns that must be in [0, 1] (rates)
+RATE_COLUMNS = ["declined_rate_7d", "repayment_rate_90d"]
+
+
+def _write_dq_result(check_name, check_type, status, details, rows_checked, rows_failed):
+    """Write a single DQ result row to gold.dq_results."""
+    escaped = json.dumps(details).replace("'", "\\'")
+    ch_execute(
+        f"INSERT INTO gold.dq_results VALUES "
+        f"(now64(3), 'feature_store', '{check_name}', '{check_type}', "
+        f"'{status}', '{escaped}', {rows_checked}, {rows_failed})"
+    )
+
+
+def validate_features(features):
+    """Validate computed features before writing to Feature Store.
+
+    Returns validated features with invalid rows removed.
+    Writes validation results to gold.dq_results.
+    """
+    total = len(features)
+    invalid_indices = set()
+
+    # Check 1: NULL values in feature columns
+    null_count = 0
+    for i, f in enumerate(features):
+        for col in FEATURE_COLUMNS:
+            if f.get(col) is None:
+                null_count += 1
+                invalid_indices.add(i)
+                break
+    _write_dq_result(
+        "null_check", "completeness",
+        "pass" if null_count == 0 else "fail",
+        {"null_rows": null_count}, total, null_count,
+    )
+    print(f"  null_check: {null_count} invalid rows")
+
+    # Check 2: Negative values in count/amount features
+    negative_count = 0
+    for i, f in enumerate(features):
+        for col in NON_NEGATIVE_COLUMNS:
+            val = f.get(col)
+            if val is not None and float(val) < 0:
+                negative_count += 1
+                invalid_indices.add(i)
+                break
+    _write_dq_result(
+        "range_check_non_negative", "validity",
+        "pass" if negative_count == 0 else "warn",
+        {"negative_rows": negative_count}, total, negative_count,
+    )
+    print(f"  range_check_non_negative: {negative_count} invalid rows")
+
+    # Check 3: Rate columns in [0, 1]
+    rate_count = 0
+    for i, f in enumerate(features):
+        for col in RATE_COLUMNS:
+            val = f.get(col)
+            if val is not None and (float(val) < 0 or float(val) > 1):
+                rate_count += 1
+                invalid_indices.add(i)
+                break
+    _write_dq_result(
+        "range_check_rates", "validity",
+        "pass" if rate_count == 0 else "warn",
+        {"out_of_range_rows": rate_count}, total, rate_count,
+    )
+    print(f"  range_check_rates: {rate_count} invalid rows")
+
+    # Check 4: 30d velocity >= 7d velocity
+    ordering_count = 0
+    for f in features:
+        v7 = f.get("tx_velocity_7d", 0)
+        v30 = f.get("tx_velocity_30d", 0)
+        if v7 is not None and v30 is not None and int(v30) < int(v7):
+            ordering_count += 1
+    _write_dq_result(
+        "velocity_ordering", "consistency",
+        "pass" if ordering_count == 0 else "warn",
+        {"misordered_rows": ordering_count}, total, ordering_count,
+    )
+    print(f"  velocity_ordering: {ordering_count} misordered rows")
+
+    # Remove invalid rows
+    valid = [f for i, f in enumerate(features) if i not in invalid_indices]
+    removed = total - len(valid)
+    print(f"  Validation: {len(valid)}/{total} rows passed ({removed} removed)")
+    return valid
+
+
 def main():
     print("=== Feature Engineering (MWAA HTTP) ===")
 
@@ -79,6 +182,12 @@ def main():
     print(f"Features: {len(features)} users")
     if not features:
         raise ValueError("No features computed")
+
+    # --- Validation gate (writes results to gold.dq_results) ---
+    print("\n=== Validation Gate ===")
+    features = validate_features(features)
+    if not features:
+        raise ValueError("No features passed validation")
 
     vf = valid_from.strftime("%Y-%m-%d %H:%M:%S")
     vt = valid_to.strftime("%Y-%m-%d %H:%M:%S")

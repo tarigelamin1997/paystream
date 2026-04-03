@@ -4,11 +4,12 @@ import logging
 import time
 
 from fastapi import APIRouter, HTTPException, Query, Request
+from pydantic import ValidationError
 from prometheus_client import generate_latest
 
 from .config import FEATURE_VERSION
-from .metrics import FEATURE_LATENCY, FEATURE_REQUESTS
-from .models import FeatureResponse, HealthResponse
+from .metrics import FEATURE_LATENCY, FEATURE_REQUESTS, FEATURE_VALIDATION_FAILURES
+from .models import FeatureResponse, FeatureValues, HealthResponse
 
 logger = logging.getLogger(__name__)
 router = APIRouter()
@@ -100,6 +101,18 @@ async def get_features(
 
         columns = [c[0] for c in col_types]
         features = _row_to_features(data_rows[0], columns)
+
+        # Validate feature values through Pydantic model
+        try:
+            validated = FeatureValues(**features)
+        except ValidationError as ve:
+            FEATURE_VALIDATION_FAILURES.inc()
+            FEATURE_REQUESTS.labels(status="error").inc()
+            logger.warning("Feature validation failed for user_id=%d: %s", user_id, ve)
+            raise HTTPException(
+                status_code=503,
+                detail={"status": "error", "reason": f"Feature validation failed: {ve}", "user_id": user_id},
+            )
 
         FEATURE_REQUESTS.labels(status="ok").inc()
         return FeatureResponse(

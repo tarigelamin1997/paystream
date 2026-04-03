@@ -13,3 +13,8 @@ FEATURE_REQUESTS = Counter(
     "Total Feature Store API requests",
     ["status"],
 )
+
+FEATURE_VALIDATION_FAILURES = Counter(
+    "paystream_feature_validation_failures_total",
+    "Number of feature requests that failed Pydantic validation",
+)
