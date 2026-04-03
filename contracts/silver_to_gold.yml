@@ -1,0 +1,101 @@
+# Data Contract: Silver → Gold
+# Defines what Gold mart models expect from Silver source tables
+# Enforced by dbt contract tests (dbt/tests/contract_silver_*.sql)
+
+contracts:
+  - source_tables:
+      - silver.transactions_silver
+      - silver.users_silver
+      - silver.merchants_silver
+    target_model: gold_merchant_daily_kpis
+    required_columns:
+      - name: transaction_id
+        source: silver.transactions_silver
+        type: Int64
+        nullable: false
+      - name: merchant_id
+        source: silver.transactions_silver
+        type: Int32
+        nullable: false
+      - name: amount
+        source: silver.transactions_silver
+        type: "Decimal(12, 2)"
+        nullable: false
+      - name: status
+        source: silver.transactions_silver
+        type: "LowCardinality(String)"
+        nullable: false
+      - name: created_at
+        source: silver.transactions_silver
+        type: "DateTime64(3)"
+        nullable: false
+      - name: merchant_category
+        source: silver.merchants_silver
+        type: "LowCardinality(String)"
+        nullable: false
+
+  - source_tables:
+      - silver.transactions_silver
+      - silver.users_silver
+    target_model: gold_user_cohorts
+    required_columns:
+      - name: transaction_id
+        source: silver.transactions_silver
+        type: Int64
+        nullable: false
+      - name: user_id
+        source: silver.transactions_silver
+        type: Int64
+        nullable: false
+      - name: amount
+        source: silver.transactions_silver
+        type: "Decimal(12, 2)"
+        nullable: false
+      - name: created_at
+        source: silver.transactions_silver
+        type: "DateTime64(3)"
+        nullable: false
+
+  - source_tables:
+      - silver.transactions_silver
+      - silver.repayments_silver
+    target_model: gold_settlement_reconciliation
+    required_columns:
+      - name: transaction_id
+        source: silver.transactions_silver
+        type: Int64
+        nullable: false
+      - name: merchant_id
+        source: silver.transactions_silver
+        type: Int32
+        nullable: false
+      - name: amount
+        source: silver.transactions_silver
+        type: "Decimal(12, 2)"
+        nullable: false
+      - name: repayment_id
+        source: silver.repayments_silver
+        type: Int64
+        nullable: false
+
+  - source_tables:
+      - silver.transactions_silver
+      - silver.repayments_silver
+    target_model: gold_risk_dashboard
+    required_columns:
+      - name: transaction_id
+        source: silver.transactions_silver
+        type: Int64
+        nullable: false
+      - name: status
+        source: silver.transactions_silver
+        type: "LowCardinality(String)"
+        nullable: false
+      - name: decision_latency_ms
+        source: silver.transactions_silver
+        type: "Nullable(Int16)"
+        nullable: true
+      - name: amount
+        source: silver.transactions_silver
+        type: "Decimal(12, 2)"
+        nullable: false

@@ -1,0 +1,114 @@
+# Data Contract: Gold/Silver → Feature Store
+# Defines what compute_features.py (Spark) expects as input
+# and what schema feature_store.user_credit_features must have
+# Enforced by dbt contract tests (dbt/tests/contract_feature_store_*.sql)
+
+input_contracts:
+  - source_table: silver.transactions_silver
+    consumer: compute_features.py
+    required_columns:
+      - name: transaction_id
+        type: Int64
+        nullable: false
+      - name: user_id
+        type: Int64
+        nullable: false
+      - name: merchant_id
+        type: Int32
+        nullable: false
+      - name: amount
+        type: "Decimal(12, 2)"
+        nullable: false
+      - name: status
+        type: "LowCardinality(String)"
+        nullable: false
+      - name: created_at
+        type: "DateTime64(3)"
+        nullable: false
+
+  - source_table: silver.repayments_silver
+    consumer: compute_features.py
+    required_columns:
+      - name: repayment_id
+        type: Int64
+        nullable: false
+      - name: transaction_id
+        type: Int64
+        nullable: false
+      - name: user_id
+        type: Int64
+        nullable: false
+      - name: amount
+        type: "Decimal(12, 2)"
+        nullable: false
+      - name: due_date
+        type: Date
+        nullable: false
+      - name: paid_at
+        type: "Nullable(DateTime64(3))"
+        nullable: true
+      - name: status
+        type: "LowCardinality(String)"
+        nullable: false
+
+  - source_table: silver.installments_silver
+    consumer: compute_features.py
+    required_columns:
+      - name: schedule_id
+        type: Int64
+        nullable: false
+      - name: transaction_id
+        type: Int64
+        nullable: false
+      - name: user_id
+        type: Int64
+        nullable: false
+      - name: status
+        type: "LowCardinality(String)"
+        nullable: false
+
+output_contract:
+  target_table: feature_store.user_credit_features
+  required_columns:
+    - name: user_id
+      type: Int64
+      nullable: false
+    - name: snapshot_ts
+      type: "DateTime64(3)"
+      nullable: false
+    - name: valid_from
+      type: "DateTime64(3)"
+      nullable: false
+    - name: valid_to
+      type: "DateTime64(3)"
+      nullable: false
+    - name: feature_version
+      type: "LowCardinality(String)"
+      nullable: false
+    - name: tx_velocity_7d
+      type: UInt16
+      nullable: false
+    - name: tx_velocity_30d
+      type: UInt16
+      nullable: false
+    - name: avg_tx_amount_30d
+      type: "Decimal(10, 2)"
+      nullable: false
+    - name: repayment_rate_90d
+      type: Float32
+      nullable: false
+    - name: merchant_diversity_30d
+      type: UInt8
+      nullable: false
+    - name: declined_rate_7d
+      type: Float32
+      nullable: false
+    - name: active_installments
+      type: UInt8
+      nullable: false
+    - name: days_since_first_tx
+      type: UInt16
+      nullable: false
+    - name: _ingested_at
+      type: DateTime
+      nullable: false

@@ -10,17 +10,123 @@ sources:
     tables:
       - name: transactions_silver
         columns:
+          - name: transaction_id
+            tests:
+              - not_null
+          - name: user_id
+            tests:
+              - not_null
+              - relationships:
+                  to: source('silver', 'users_silver')
+                  field: user_id
+                  config:
+                    severity: warn
+          - name: merchant_id
+            tests:
+              - not_null
+              - relationships:
+                  to: source('silver', 'merchants_silver')
+                  field: merchant_id
+                  config:
+                    severity: warn
           - name: amount
             tests:
+              - not_null
               - dbt_expectations.expect_column_values_to_be_of_type:
                   column_type: "Decimal(12, 2)"
+          - name: currency
+            tests:
+              - not_null
           - name: status
             tests:
               - accepted_values:
                   values: ['approved', 'declined', 'pending', 'cancelled']
+          - name: created_at
+            tests:
+              - not_null
+
       - name: repayments_silver
+        columns:
+          - name: repayment_id
+            tests:
+              - not_null
+          - name: transaction_id
+            tests:
+              - not_null
+              - relationships:
+                  to: source('silver', 'transactions_silver')
+                  field: transaction_id
+                  config:
+                    severity: warn
+          - name: user_id
+            tests:
+              - not_null
+              - relationships:
+                  to: source('silver', 'users_silver')
+                  field: user_id
+                  config:
+                    severity: warn
+          - name: amount
+            tests:
+              - not_null
+          - name: status
+            tests:
+              - accepted_values:
+                  values: ['overdue', 'paid', 'waived']
+
       - name: users_silver
+        columns:
+          - name: user_id
+            tests:
+              - not_null
+          - name: email
+            tests:
+              - not_null
+          - name: credit_limit
+            tests:
+              - not_null
+          - name: kyc_status
+            tests:
+              - accepted_values:
+                  values: ['approved', 'pending', 'rejected']
+          - name: credit_tier
+            tests:
+              - accepted_values:
+                  values: ['standard', 'premium', 'vip']
+
       - name: merchants_silver
+        columns:
+          - name: merchant_id
+            tests:
+              - not_null
+          - name: merchant_name
+            tests:
+              - not_null
+          - name: merchant_category
+            tests:
+              - not_null
+          - name: risk_tier
+            tests:
+              - accepted_values:
+                  values: ['low', 'medium', 'high']
+
       - name: installments_silver
+        columns:
+          - name: schedule_id
+            tests:
+              - not_null
+          - name: transaction_id
+            tests:
+              - not_null
+              - relationships:
+                  to: source('silver', 'transactions_silver')
+                  field: transaction_id
+                  config:
+                    severity: warn
+          - name: status
+            tests:
+              - accepted_values:
+                  values: ['active', 'completed', 'defaulted']
+
       - name: app_events_silver
       - name: merchant_sessions_silver

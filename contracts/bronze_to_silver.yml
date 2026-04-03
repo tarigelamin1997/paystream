@@ -1,0 +1,215 @@
+# Data Contract: Bronze → Silver
+# Defines what Silver models expect from Bronze source tables
+# Enforced by dbt contract tests (dbt/tests/contract_bronze_*.sql)
+
+contracts:
+  - source_table: bronze.pg_transactions_raw
+    target_model: transactions_silver
+    required_columns:
+      - name: transaction_id
+        type: Int64
+        nullable: false
+      - name: user_id
+        type: Int64
+        nullable: false
+      - name: merchant_id
+        type: Int32
+        nullable: false
+      - name: amount
+        type: "Decimal(18, 2)"
+        nullable: false
+      - name: currency
+        type: String
+        nullable: false
+      - name: status
+        type: String
+        nullable: false
+      - name: decision_latency_ms
+        type: "Nullable(Int16)"
+        nullable: true
+      - name: installment_count
+        type: Int16
+        nullable: false
+      - name: created_at
+        type: "DateTime64(3)"
+        nullable: false
+      - name: _ingested_at
+        type: DateTime
+        nullable: false
+
+  - source_table: bronze.pg_users_raw
+    target_model: users_silver
+    required_columns:
+      - name: user_id
+        type: Int64
+        nullable: false
+      - name: full_name
+        type: String
+        nullable: false
+      - name: email
+        type: String
+        nullable: false
+      - name: credit_limit
+        type: "Decimal(18, 2)"
+        nullable: false
+      - name: credit_tier
+        type: String
+        nullable: false
+      - name: kyc_status
+        type: String
+        nullable: false
+      - name: created_at
+        type: "DateTime64(3)"
+        nullable: false
+      - name: updated_at
+        type: "DateTime64(3)"
+        nullable: false
+      - name: _ingested_at
+        type: DateTime
+        nullable: false
+
+  - source_table: bronze.pg_merchants_raw
+    target_model: merchants_silver
+    required_columns:
+      - name: merchant_id
+        type: Int32
+        nullable: false
+      - name: merchant_name
+        type: String
+        nullable: false
+      - name: merchant_category
+        type: String
+        nullable: false
+      - name: risk_tier
+        type: String
+        nullable: false
+      - name: commission_rate
+        type: "Decimal(18, 4)"
+        nullable: false
+      - name: credit_limit
+        type: "Decimal(18, 2)"
+        nullable: false
+      - name: country
+        type: String
+        nullable: false
+      - name: created_at
+        type: "DateTime64(3)"
+        nullable: false
+      - name: updated_at
+        type: "DateTime64(3)"
+        nullable: false
+      - name: _ingested_at
+        type: DateTime
+        nullable: false
+
+  - source_table: bronze.pg_repayments_raw
+    target_model: repayments_silver
+    required_columns:
+      - name: repayment_id
+        type: Int64
+        nullable: false
+      - name: transaction_id
+        type: Int64
+        nullable: false
+      - name: user_id
+        type: Int64
+        nullable: false
+      - name: installment_number
+        type: Int16
+        nullable: false
+      - name: amount
+        type: "Decimal(18, 2)"
+        nullable: false
+      - name: due_date
+        type: Date
+        nullable: false
+      - name: status
+        type: String
+        nullable: false
+      - name: created_at
+        type: "DateTime64(3)"
+        nullable: false
+      - name: updated_at
+        type: "DateTime64(3)"
+        nullable: false
+      - name: _ingested_at
+        type: DateTime
+        nullable: false
+
+  - source_table: bronze.pg_installments_raw
+    target_model: installments_silver
+    required_columns:
+      - name: schedule_id
+        type: Int64
+        nullable: false
+      - name: transaction_id
+        type: Int64
+        nullable: false
+      - name: user_id
+        type: Int64
+        nullable: false
+      - name: total_amount
+        type: "Decimal(18, 2)"
+        nullable: false
+      - name: installment_count
+        type: Int16
+        nullable: false
+      - name: installment_amount
+        type: "Decimal(18, 2)"
+        nullable: false
+      - name: start_date
+        type: Date
+        nullable: false
+      - name: end_date
+        type: Date
+        nullable: false
+      - name: status
+        type: String
+        nullable: false
+      - name: created_at
+        type: "DateTime64(3)"
+        nullable: false
+      - name: _ingested_at
+        type: DateTime
+        nullable: false
+
+  - source_table: bronze.mongo_app_events_raw
+    target_model: app_events_silver
+    required_columns:
+      - name: event_id
+        type: String
+        nullable: false
+      - name: user_id
+        type: String
+        nullable: false
+      - name: event_type
+        type: String
+        nullable: false
+      - name: session_id
+        type: String
+        nullable: false
+      - name: created_at
+        type: "DateTime64(3)"
+        nullable: false
+      - name: _ingested_at
+        type: DateTime
+        nullable: false
+
+  - source_table: bronze.mongo_merchant_sessions_raw
+    target_model: merchant_sessions_silver
+    required_columns:
+      - name: session_id
+        type: String
+        nullable: false
+      - name: merchant_id
+        type: String
+        nullable: false
+      - name: action
+        type: String
+        nullable: false
+      - name: created_at
+        type: "DateTime64(3)"
+        nullable: false
+      - name: _ingested_at
+        type: DateTime
+        nullable: false
