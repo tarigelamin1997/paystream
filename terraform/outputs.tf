@@ -89,6 +89,11 @@ output "sns_topic_arn" {
   value       = module.observability.sns_topic_arn
 }
 
+output "grafana_webhook_url" {
+  description = "API Gateway URL for Grafana webhook alerts"
+  value       = module.observability.grafana_webhook_url
+}
+
 # Bastion
 output "bastion_public_ip" {
   description = "Bastion host Elastic IP"

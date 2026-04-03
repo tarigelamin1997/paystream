@@ -18,3 +18,8 @@ FEATURE_VALIDATION_FAILURES = Counter(
     "paystream_feature_validation_failures_total",
     "Number of feature requests that failed Pydantic validation",
 )
+
+CIRCUIT_BREAKER_TRIPS = Counter(
+    "paystream_circuit_breaker_trips_total",
+    "Number of requests rejected by circuit breaker (ClickHouse unavailable)",
+)

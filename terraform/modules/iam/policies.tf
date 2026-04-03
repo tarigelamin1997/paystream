@@ -190,3 +190,23 @@ resource "aws_iam_role_policy_attachment" "mwaa_base" {
   role       = aws_iam_role.mwaa_execution.name
   policy_arn = aws_iam_policy.mwaa_base.arn
 }
+
+# Phase 7C: Allow MWAA to discover ECS tasks (Debezium health check DAG)
+resource "aws_iam_role_policy" "mwaa_ecs_discovery" {
+  name = "${var.project_name}-mwaa-ecs-discovery"
+  role = aws_iam_role.mwaa_execution.name
+
+  policy = jsonencode({
+    Version = "2012-10-17"
+    Statement = [
+      {
+        Effect = "Allow"
+        Action = [
+          "ecs:ListTasks",
+          "ecs:DescribeTasks"
+        ]
+        Resource = "*"
+      }
+    ]
+  })
+}

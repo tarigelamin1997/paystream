@@ -1,6 +1,7 @@
 """FastAPI routes for the Feature Store API."""
 
 import logging
+import threading
 import time
 
 from fastapi import APIRouter, HTTPException, Query, Request
@@ -8,11 +9,61 @@ from pydantic import ValidationError
 from prometheus_client import generate_latest
 
 from .config import FEATURE_VERSION
-from .metrics import FEATURE_LATENCY, FEATURE_REQUESTS, FEATURE_VALIDATION_FAILURES
+from .metrics import (
+    CIRCUIT_BREAKER_TRIPS,
+    FEATURE_LATENCY,
+    FEATURE_REQUESTS,
+    FEATURE_VALIDATION_FAILURES,
+)
 from .models import FeatureResponse, FeatureValues, HealthResponse
 
 logger = logging.getLogger(__name__)
 router = APIRouter()
+
+
+# ---------------------------------------------------------------------------
+# Circuit breaker — graceful degradation when ClickHouse is down
+# ---------------------------------------------------------------------------
+
+
+class CircuitBreaker:
+    CLOSED = "closed"
+    OPEN = "open"
+    HALF_OPEN = "half_open"
+
+    def __init__(self, failure_threshold=3, recovery_timeout=30):
+        self.state = self.CLOSED
+        self.failure_count = 0
+        self.failure_threshold = failure_threshold
+        self.recovery_timeout = recovery_timeout
+        self.last_failure_time = 0.0
+        self._lock = threading.Lock()
+
+    def can_execute(self):
+        with self._lock:
+            if self.state == self.CLOSED:
+                return True
+            if self.state == self.OPEN:
+                if time.time() - self.last_failure_time >= self.recovery_timeout:
+                    self.state = self.HALF_OPEN
+                    return True
+                return False
+            return True  # HALF_OPEN — allow one probe
+
+    def record_success(self):
+        with self._lock:
+            self.state = self.CLOSED
+            self.failure_count = 0
+
+    def record_failure(self):
+        with self._lock:
+            self.failure_count += 1
+            self.last_failure_time = time.time()
+            if self.failure_count >= self.failure_threshold:
+                self.state = self.OPEN
+
+
+cb = CircuitBreaker(failure_threshold=3, recovery_timeout=30)
 
 # ---------------------------------------------------------------------------
 # SQL templates — no JOINs, LIMIT 1, ORDER BY for P99 < 50ms
@@ -70,6 +121,14 @@ async def get_features(
     Point-in-time path (as_of provided): tries temporal range first,
     falls back to LATEST if no rows match (handles far-future valid_to).
     """
+    if not cb.can_execute():
+        CIRCUIT_BREAKER_TRIPS.inc()
+        FEATURE_REQUESTS.labels(status="error").inc()
+        raise HTTPException(
+            status_code=503,
+            detail={"status": "degraded", "reason": "clickhouse_unavailable", "user_id": user_id},
+        )
+
     pool = request.app.state.ch_pool
     params = {"user_id": user_id, "version": FEATURE_VERSION}
 
@@ -114,6 +173,7 @@ async def get_features(
                 detail={"status": "error", "reason": f"Feature validation failed: {ve}", "user_id": user_id},
             )
 
+        cb.record_success()
         FEATURE_REQUESTS.labels(status="ok").inc()
         return FeatureResponse(
             user_id=user_id,
@@ -126,6 +186,7 @@ async def get_features(
     except HTTPException:
         raise
     except Exception as exc:
+        cb.record_failure()
         elapsed_ms = (time.perf_counter() - start) * 1000
         FEATURE_LATENCY.observe(elapsed_ms / 1000)
         FEATURE_REQUESTS.labels(status="error").inc()
