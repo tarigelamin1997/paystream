@@ -39,3 +39,7 @@ schema_registry_memory = 1024
 
 # MWAA
 mwaa_environment_class = "mw1.small"
+
+# Alerting (Phase 7C)
+alert_email       = "tarigelamin1997@gmail.com"
+slack_webhook_url = ""

@@ -6,3 +6,8 @@ output "grafana_endpoint" {
 output "prometheus_endpoint" {
   value = aws_prometheus_workspace.main.prometheus_endpoint
 }
+
+output "sns_topic_arn" {
+  description = "ARN of the PayStream alerts SNS topic"
+  value       = aws_sns_topic.alerts.arn
+}

@@ -84,6 +84,11 @@ output "prometheus_endpoint" {
   value       = module.observability.prometheus_endpoint
 }
 
+output "sns_topic_arn" {
+  description = "PayStream alerts SNS topic ARN"
+  value       = module.observability.sns_topic_arn
+}
+
 # Bastion
 output "bastion_public_ip" {
   description = "Bastion host Elastic IP"

@@ -133,8 +133,11 @@ module "mwaa" {
 module "observability" {
   source = "./modules/observability"
 
-  project_name = var.project_name
-  environment  = var.environment
+  project_name            = var.project_name
+  environment             = var.environment
+  alert_email             = var.alert_email
+  slack_webhook_url       = var.slack_webhook_url
+  rds_instance_identifier = "${var.project_name}-rds"
 }
 
 module "bastion" {
