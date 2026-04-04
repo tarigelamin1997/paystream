@@ -33,7 +33,7 @@ Execute files in numeric order. Dependencies require this sequence:
 |----------------------------|--------------------|------------------------------------|
 | String (decimal amount)    | Decimal64(2)       | `toDecimal64(amount, 2)`          |
 | String (commission rate)   | Decimal64(4)       | `toDecimal64(commission_rate, 4)` |
-| Int64 (epoch millis)       | DateTime64(3)      | `fromUnixTimestamp64Milli(...)`    |
+| Int64 (epoch micros)       | DateTime64(3)      | `toDateTime64(fromUnixTimestamp64Micro(...), 3)` |
 | String (ISO timestamp)     | DateTime64(3)      | `parseDateTimeBestEffort(...)`     |
 | String (date)              | Date               | `toDate(...)`                      |
 

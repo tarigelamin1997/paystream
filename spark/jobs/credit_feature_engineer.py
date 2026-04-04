@@ -94,8 +94,12 @@ def get_snapshot_ts(spark, host):
                   .collect()[0][0])
     if max_ts_str is None:
         raise ValueError("No data in silver.transactions_silver")
-    # Parse — handle far-future dates by capping at 2025
+    # Parse — cap far-future dates to prevent downstream overflow
     max_ts = datetime.fromisoformat(max_ts_str.replace(".000", ""))
+    if max_ts.year > datetime.now().year + 1:
+        cap = datetime.now().replace(microsecond=0)
+        print(f"WARNING: max(created_at)={max_ts} is far-future, capping to {cap}")
+        max_ts = cap
     print(f"Derived snapshot_ts from data: {max_ts}")
     return max_ts
 
@@ -157,7 +161,7 @@ def compute_account_age(transactions, snapshot_ts):
             .groupBy("user_id")
             .agg(
                 datediff(lit(snapshot_ts), spark_min("created_at"))
-                    .cast(ShortType()).alias("days_since_first_tx")
+                    .cast(IntegerType()).alias("days_since_first_tx")
             ))
 
 

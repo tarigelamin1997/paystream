@@ -163,7 +163,7 @@ def main():
             toFloat32(if(countIf(created_at >= toDateTime64('{cutoff_7d}', 3)) > 0,
                 countIf(created_at >= toDateTime64('{cutoff_7d}', 3) AND status = 'declined') /
                 countIf(created_at >= toDateTime64('{cutoff_7d}', 3)), 0)) AS declined_rate_7d,
-            toUInt16(dateDiff('day', min(created_at), toDateTime64('{snapshot_ts}', 3))) AS days_since_first_tx
+            toUInt32(dateDiff('day', min(created_at), toDateTime64('{snapshot_ts}', 3))) AS days_since_first_tx
         FROM silver.transactions_silver GROUP BY user_id
     ) AS tx
     LEFT JOIN (
