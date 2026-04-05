@@ -38,9 +38,11 @@ Built entirely on AWS managed services. Deployed and torn down with a single com
                           Consumers
 ```
 
-**Orchestration:** MWAA (Airflow 2.10) -- 7 DAGs managing dbt, feature computation, drift detection, and health checks.
+**Orchestration:** MWAA (Airflow 2.10) -- 10 DAGs managing dbt, feature computation, drift detection, data quality, and health checks.
 
-**Observability:** Self-hosted Grafana OSS on ClickHouse EC2 (port 3000) + Amazon Managed Prometheus -- 5 dashboards, 5 alert rules.
+**Observability:** Self-hosted Grafana OSS on ClickHouse EC2 (port 3000) -- 6 dashboards, 8 alert rules, Lambda + API Gateway SNS bridge for email alerting.
+
+**QA Score:** 91/100 (journey: 52 -> 75 -> 83 -> 91). See [QA Audit Report](docs/qa-audit-report.md).
 
 ---
 
@@ -59,7 +61,8 @@ Built entirely on AWS managed services. Deployed and torn down with a single com
 | Transformations | dbt-core + dbt-clickhouse | 1.8.0 |
 | Feature API | FastAPI on ECS Fargate + ALB | 0.111.0 |
 | Orchestration | MWAA (Airflow) | 2.10.0 |
-| Monitoring | Self-hosted Grafana OSS + AMP (Prometheus) | 11.0.0 |
+| Monitoring | Self-hosted Grafana OSS + ClickHouse drift_metrics | 11.0.0 |
+| Alerting | Lambda SNS bridge + API Gateway + CloudWatch | -- |
 | IaC | Terraform | 1.7.5 |
 | Language | Python | 3.12 |
 
@@ -180,34 +183,41 @@ The Feature API serves pre-computed credit risk features with **P99 < 6ms** (tar
 ### Get Features for a User (real-time)
 
 ```bash
-curl http://<ALB_DNS>/features/user/5002
+curl http://<ALB_DNS>/features/user/5003
 ```
 
 Response:
 
 ```json
 {
-  "user_id": 5002,
+  "user_id": 5003,
   "as_of": null,
   "feature_version": "v2.1.0",
-  "latency_ms": 5.11,
+  "latency_ms": 5.3,
   "features": {
-    "tx_velocity_7d": 6,
-    "tx_velocity_30d": 6,
-    "avg_tx_amount_30d": "1976.27",
-    "repayment_rate_90d": 0.0,
-    "merchant_diversity_30d": 6,
-    "declined_rate_7d": 0.167,
-    "active_installments": 3,
-    "days_since_first_tx": 0
+    "snapshot_ts": "2024-12-31T23:59:59",
+    "tx_velocity_7d": 1,
+    "tx_velocity_30d": 1,
+    "avg_tx_amount_30d": "2742.58",
+    "repayment_rate_90d": 1.0,
+    "merchant_diversity_30d": 1,
+    "declined_rate_7d": 0.0,
+    "active_installments": 0,
+    "days_since_first_tx": 330
   }
 }
 ```
 
 ### Point-in-Time Query (backtesting)
 
+Two snapshots exist (Sep 2024 + Dec 2024). Temporal queries return different data:
+
 ```bash
-curl "http://<ALB_DNS>/features/user/5002?as_of=2299-12-31T23:00:00"
+# Returns Dec 2024 snapshot (days_since_first_tx=287)
+curl "http://<ALB_DNS>/features/user/12345"
+
+# Returns Sep 2024 snapshot (days_since_first_tx=166)
+curl "http://<ALB_DNS>/features/user/12345?as_of=2024-09-15T00:00:00"
 ```
 
 ### Health Check
@@ -248,7 +258,7 @@ curl http://<ALB_DNS>/metrics
 
 ## Dashboards
 
-Five Grafana dashboards provisioned on self-hosted Grafana (ClickHouse EC2 port 3000, via SSH tunnel):
+Six Grafana dashboards provisioned on self-hosted Grafana (ClickHouse EC2 port 3000, via SSH tunnel):
 
 ### 1. Merchant Operations ([screenshot](docs/screenshots/merchant_operations.png))
 - GMV by merchant (time series), approval rate trend, BNPL penetration (gauge)
@@ -271,12 +281,56 @@ Five Grafana dashboards provisioned on self-hosted Grafana (ClickHouse EC2 port 
 - Storage by database layer (`system.parts`), query cost top 10 (`system.query_log`)
 - Table engine distribution, API invocations
 
-### 5 Alert Rules
-- `feature_pipeline_stale` -- Feature Store > 6 hours old (Critical)
-- `feature_drift_detected` -- Any drift score > 3.0 (High)
-- `settlement_mismatch` -- Variance > 0.1% (High)
-- `approval_rate_drop` -- Rate drops > 15% in 1 hour (Medium)
-- `ingestion_flatline` -- No Bronze rows for 5 minutes (Critical)
+### 6. Pipeline Overview
+- Latest DAG audit status (10 DAGs), DQ results summary (24h)
+- Feature Store health (user count, snapshot count), Bronze row counts
+
+### 8 Grafana Alert Rules + 1 CloudWatch Alarm
+
+| Alert | Severity | Condition |
+|-------|----------|-----------|
+| DQ Check Failed | Critical | gold.dq_results status=fail in last 1h |
+| Pipeline DAG Failed | Critical | gold.pipeline_audit_log status=failed in last 1h |
+| Ingestion Flatline | Critical | 0 new Bronze rows in 5 min |
+| Approval Rate Drop | Warning | Approval rate < 50% in 1h |
+| Feature Pipeline Stale | Warning | Feature Store > 6 hours old |
+| Feature Drift Detected | Warning | drift_metrics.is_drifted = 1 |
+| Settlement Mismatch | Warning | Any mismatch in yesterday's settlements |
+| Bronze Ingestion Lag | Warning | max(_ingested_at) > 60 min old |
+| RDS Storage Low (CloudWatch) | Alarm | FreeStorageSpace < 5GB |
+
+**Alerting chain:** Grafana webhook -> API Gateway -> Lambda (`paystream-grafana-sns-bridge`) -> SNS -> email. Terraform-managed.
+
+---
+
+## Data Quality & Production Hardening (Phase 7)
+
+| Component | Count | Details |
+|-----------|-------|---------|
+| dbt tests | 55 | 53 pass, 2 warn, 0 error (7 Bronze PK + 30 Silver + 4 Gold + 9 contract + 5 pre-existing) |
+| Runtime DQ checks | 12/cycle | 4 feature validation + 3 DQ validation + 5 schema drift |
+| Data contracts | 3 | bronze_to_silver.yml, silver_to_gold.yml, gold_to_feature_store.yml |
+| Grafana alerts | 8 | 3 critical + 5 warning severity |
+| CloudWatch alarms | 1 | RDS storage low (< 5GB) |
+| Audit trail | 10/10 DAGs | `gold.pipeline_audit_log` + `silver.update_audit_log` + `silver.delete_audit_log` |
+| Schema migrations | 4 | Tracked in `gold.schema_versions` with MD5 checksums |
+| Circuit breaker | 3 failures / 30s recovery | FastAPI → ClickHouse connection protection |
+| Pydantic validation | 8 features | 503 on invalid data, Prometheus counter for failures |
+
+### 10 Airflow DAGs
+
+| DAG | Schedule | Purpose |
+|-----|----------|---------|
+| `dbt_daily_dwh` | Daily 03:00 | Run dbt Gold models |
+| `dbt_hourly_snapshots` | Hourly | Run SCD Type 2 snapshots |
+| `feature_pipeline` | Every 4h | Compute + write 8 credit risk features |
+| `feature_drift_monitor` | Hourly | PSI-based drift detection on 8 features |
+| `settlement_reconciliation` | Daily 06:00 | Cross-check transaction vs repayment totals |
+| `data_quality_gate` | Daily 04:00 | Run dbt tests + write results |
+| `dq_validation` | Every 4h | Feature Store completeness/null/Gold checks + quality gate |
+| `schema_drift_detector` | Every 6h | Compare Avro schemas vs ClickHouse Bronze columns |
+| `debezium_health_check` | Every 5 min | Check connector status, auto-restart failed tasks |
+| `audit_log_compaction` | Daily 02:00 | Compact old audit log entries |
 
 ---
 
@@ -325,7 +379,35 @@ Five Grafana dashboards provisioned on self-hosted Grafana (ClickHouse EC2 port 
 | ADR-002 | Single AZ (eu-north-1a) | Cost reduction for dev/demo; multi-AZ documented as production improvement |
 | ADR-003 | DocumentDB over MongoDB on EC2 | Insert-only event collections; `fullDocumentBeforeChange` not needed |
 | ADR-004 | MSK Provisioned with dual auth (IAM + SCRAM) | MSK Serverless has no SCRAM; ClickHouse librdkafka requires SCRAM-SHA-512. Discovered during Phase 1 build. |
-| ADR-005 | Feature computation on bastion, not EMR Serverless | Spark JDBC cannot handle DateTime64 far-future timestamps (year 2299 overflow). clickhouse-driver on bastion works. EMR code preserved. |
+| ADR-005 | Feature computation via ClickHouse SQL, not EMR Serverless | Spark JDBC DateTime64 overflow + MWAA can't install C-extensions. ClickHouse SQL in MWAA DAG computes all 8 features directly. EMR Spark code preserved as reference. |
+| ADR-006 | Self-hosted Grafana, not AMG | Amazon Managed Grafana not available in eu-north-1. Grafana OSS installed on ClickHouse EC2 via userdata.sh. |
+| ADR-007 | Delivery semantics: at-least-once + dedup | Bronze=at-least-once (Kafka Engine), Silver=exactly-once (ReplacingMergeTree FINAL), API=ORDER BY DESC LIMIT 1 (latest version). See [ADR-007](docs/architecture-decisions/ADR-007-delivery-semantics.md). |
+
+---
+
+## Architecture Deviations (Engineering Decisions)
+
+Five major deviations from the original plan, each resolved through engineering problem-solving:
+
+### 1. MSK Serverless -> MSK Provisioned
+**Problem:** MSK Serverless supports only IAM auth. ClickHouse's librdkafka requires SCRAM-SHA-512.
+**Solution:** Switched to MSK Provisioned (kafka.t3.small x 2) with dual auth: IAM for Java clients (Debezium, Schema Registry), SCRAM for ClickHouse.
+
+### 2. AMG -> Self-hosted Grafana
+**Problem:** Amazon Managed Grafana is not available in eu-north-1 (Stockholm).
+**Solution:** Installed Grafana OSS 11.0 on the ClickHouse EC2 instance via userdata.sh. Provisioned dashboards and alerts via Grafana HTTP API.
+
+### 3. AMP remote-write -> ClickHouse drift_metrics table
+**Problem:** AMP remote-write requires the snappy C-extension, which can't be installed in MWAA.
+**Solution:** Drift metrics written directly to `feature_store.drift_metrics` table via ClickHouse HTTP. AMP still receives FastAPI Prometheus metrics (scraped, not pushed).
+
+### 4. Debezium timestamp microseconds vs milliseconds
+**Problem:** Debezium PostgreSQL connector sends `TIMESTAMP` columns as microseconds (adaptive mode default), but Bronze MVs used `fromUnixTimestamp64Milli` (expects milliseconds). This pushed all dates to year 2299.
+**Solution:** Changed 5 Bronze MVs to use `fromUnixTimestamp64Micro`. Corrected existing data via EXCHANGE TABLE. Added far-future cap in feature computation as safety guard. This debugging story -- from QA audit (score 52) through root cause diagnosis to verified fix (score 91) -- demonstrates real-world CDC pipeline debugging.
+
+### 5. Grafana -> SNS via Lambda bridge
+**Problem:** Grafana has no native SNS integration. ClickHouse EC2 is in a private subnet.
+**Solution:** Terraform-managed Lambda function + API Gateway HTTP API. Grafana fires webhook -> API Gateway -> Lambda publishes to SNS -> email. Full E2E chain verified.
 
 ---
 
@@ -355,10 +437,12 @@ paystream/
   scripts/                # Deployment, seed, verification, and feature scripts
   spark/                  # EMR Serverless Spark jobs (reference — JDBC blocked)
   api/                    # FastAPI Feature Store API (ECS Fargate + ALB)
-  dags/                   # 7 Airflow DAGs (synced to MWAA S3)
-  grafana/                # 5 dashboard JSONs, 5 alert JSONs, datasources
+  dags/                   # 10 Airflow DAGs (synced to MWAA S3)
+  grafana/                # 6 dashboards, 8 alert rules, datasources
   stress_test/            # 8-wave stress test framework + SLO results
-  docs/                   # Bug log, demo queries, screenshots
+  contracts/              # 3 data contracts (Bronze->Silver, Silver->Gold, Gold->FS)
+  migrations/             # 4 ClickHouse schema migration files
+  docs/                   # Bug log, QA report, ADRs, runbooks, screenshots
   versions.yaml           # Single source of truth for all component versions
   Makefile                # Composite build targets
 ```
@@ -376,6 +460,7 @@ make verify-phase3    # dbt models, Gold data, snapshots
 make verify-phase4    # Feature computation, Delta Lake, ClickHouse features
 make verify-phase5    # FastAPI, DAGs, MWAA health
 make verify-phase6    # Dashboards, stress test, docs
+make verify-phase7    # DQ framework, audit trail, alerting, circuit breaker
 make verify-clean     # Full teardown verification
 ```
 
@@ -392,13 +477,26 @@ Estimated cost per 6-hour session: **~$5.80**
 | DocumentDB (db.t3.medium) | $0.08 | $0.48 |
 | EC2 ClickHouse (r6i.large) | $0.15 | $0.90 |
 | EC2 Bastion (t3.micro) | $0.01 | $0.06 |
-| ECS Fargate (3 tasks) | $0.12 | $0.72 |
+| ECS Fargate (4 tasks) | $0.15 | $0.90 |
 | MWAA (mw1.small) | $0.35 | $2.10 |
 | NAT Gateway | $0.05 | $0.30 |
 | S3 + data transfer | $0.03 | $0.18 |
 | **Total** | **~$0.97** | **~$5.80** |
 
 Always run `make teardown` when done to avoid ongoing charges.
+
+---
+
+## QA Score Journey
+
+| Audit | Score | Key Change |
+|-------|:-----:|------------|
+| Initial audit | **52** | 3 critical defects: year-2299 timestamps cascading to feature corruption |
+| Post timestamp fix | **75** | Fixed Bronze MVs (Milli->Micro), re-computed features, RDS storage expanded |
+| Post D-5/D-6/D-8/D-9 fixes | **83** | VPC latency proven (P99=12ms), dbt via bastion, TF drift documented, 10/10 DAGs |
+| Post 7 QA-prescribed fixes | **91** | Gold DQ checks, 2nd temporal snapshot, Pipeline Overview dashboard, Debezium audit fix |
+
+Full QA report: [`docs/qa-audit-report.md`](docs/qa-audit-report.md)
 
 ---
 
