@@ -185,6 +185,52 @@ def check_gold_feature_reconciliation(**context):
         key="gold_reconciliation_status", value=status)
 
 
+def check_bronze_timestamp_range(**context):
+    """Check Bronze tables for far-future or ancient timestamps.
+
+    Catches the exact class of bug that caused the year-2299 cascade
+    (D-1/D-2/D-3). Any created_at more than 1 year in the future or
+    before 2020 is flagged.
+    """
+    tables = [
+        "bronze.pg_transactions_raw",
+        "bronze.pg_repayments_raw",
+        "bronze.pg_users_raw",
+        "bronze.pg_merchants_raw",
+        "bronze.pg_installments_raw",
+    ]
+    all_pass = True
+    results = {}
+    total_checked = 0
+    total_failed = 0
+    for table in tables:
+        res = execute_clickhouse_query(
+            f"SELECT countIf(toYear(created_at) > toYear(now()) + 1) AS future, "
+            f"countIf(toYear(created_at) < 2020) AS ancient, "
+            f"count() AS total FROM {table}"
+        )
+        row = res[0] if res else {"future": 0, "ancient": 0, "total": 0}
+        bad = int(row["future"]) + int(row["ancient"])
+        ok = bad == 0
+        results[table] = {
+            "future_rows": int(row["future"]),
+            "ancient_rows": int(row["ancient"]),
+            "total": int(row["total"]),
+            "pass": ok,
+        }
+        total_checked += int(row["total"])
+        total_failed += bad
+        if not ok:
+            all_pass = False
+
+    status = "pass" if all_pass else "fail"
+    _write_dq_result(
+        "bronze", "bronze_timestamp_range", "timestamp_range", status,
+        results, total_checked, total_failed,
+    )
+    context["ti"].xcom_push(key="bronze_ts_status", value=status)
+
+
 def evaluate_quality_gate(**context):
     """Check gold.dq_results for any 'fail' status in the last hour.
 
@@ -270,8 +316,13 @@ with DAG(
         python_callable=check_gold_feature_reconciliation,
     )
 
+    bronze_timestamps = PythonOperator(
+        task_id="check_bronze_timestamp_range",
+        python_callable=check_bronze_timestamp_range,
+    )
+
     # Dependencies
     run_dbt_tests >> write_dbt_results
     [write_dbt_results, fs_completeness, fs_nulls,
-     gold_completeness, gold_reconciliation] >> quality_gate
+     gold_completeness, gold_reconciliation, bronze_timestamps] >> quality_gate
     quality_gate >> dq_complete >> audit
