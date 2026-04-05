@@ -9,7 +9,7 @@ Schedule: every 5 minutes.
 from airflow import DAG
 from airflow.operators.python import PythonOperator
 from utils.clickhouse_hook import execute_clickhouse_query
-from utils.audit_logger import write_dag_audit_log, log_pipeline_event
+from utils.audit_logger import log_pipeline_event
 from datetime import datetime, timedelta
 import json
 import requests

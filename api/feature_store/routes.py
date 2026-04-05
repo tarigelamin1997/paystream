@@ -163,7 +163,7 @@ async def get_features(
 
         # Validate feature values through Pydantic model
         try:
-            validated = FeatureValues(**features)
+            FeatureValues(**features)
         except ValidationError as ve:
             FEATURE_VALIDATION_FAILURES.inc()
             FEATURE_REQUESTS.labels(status="error").inc()

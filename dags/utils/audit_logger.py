@@ -4,7 +4,6 @@ Uses the same ClickHouse HTTP hook as all other DAGs.
 Audit logging is non-fatal: failures are logged but never break the pipeline.
 """
 import json
-import time
 from utils.clickhouse_hook import execute_clickhouse_query
 
 

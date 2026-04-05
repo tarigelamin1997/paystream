@@ -1,6 +1,5 @@
 """Pydantic response models for the Feature Store API."""
 
-from datetime import datetime
 from typing import Any
 
 from pydantic import BaseModel, Field, field_validator
