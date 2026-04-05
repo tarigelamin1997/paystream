@@ -137,6 +137,54 @@ def check_feature_nulls(**context):
     context["ti"].xcom_push(key="fs_null_status", value=status)
 
 
+def check_gold_completeness(**context):
+    """Check Gold tables have expected row counts."""
+    checks = [
+        ("gold.merchant_daily_kpis", 200),
+        ("gold.user_cohorts", 49000),
+        ("gold.settlement_reconciliation", 200),
+    ]
+    all_pass = True
+    results = {}
+    for table, min_rows in checks:
+        res = execute_clickhouse_query(f"SELECT count() AS c FROM {table}")
+        cnt = res[0]["c"] if res else 0
+        ok = cnt >= min_rows
+        results[table] = {"rows": cnt, "min_expected": min_rows, "pass": ok}
+        if not ok:
+            all_pass = False
+
+    status = "pass" if all_pass else "fail"
+    _write_dq_result(
+        "gold", "gold_completeness_check", "completeness", status,
+        results, sum(r["rows"] for r in results.values()),
+        sum(1 for r in results.values() if not r["pass"]),
+    )
+    context["ti"].xcom_push(key="gold_completeness_status", value=status)
+
+
+def check_gold_feature_reconciliation(**context):
+    """Reconcile Silver user count vs Feature Store user count."""
+    silver = execute_clickhouse_query(
+        "SELECT count() AS c FROM silver.users_silver FINAL"
+    )
+    fs = execute_clickhouse_query(
+        "SELECT uniq(user_id) AS c FROM feature_store.user_credit_features"
+    )
+    silver_cnt = silver[0]["c"] if silver else 0
+    fs_cnt = fs[0]["c"] if fs else 0
+    coverage = fs_cnt / silver_cnt if silver_cnt > 0 else 0
+    status = "pass" if coverage >= 0.95 else ("warn" if coverage >= 0.80 else "fail")
+    _write_dq_result(
+        "gold", "gold_feature_reconciliation", "reconciliation", status,
+        {"silver_users": silver_cnt, "fs_users": fs_cnt,
+         "coverage": round(coverage, 4)},
+        silver_cnt, abs(silver_cnt - fs_cnt),
+    )
+    context["ti"].xcom_push(
+        key="gold_reconciliation_status", value=status)
+
+
 def evaluate_quality_gate(**context):
     """Check gold.dq_results for any 'fail' status in the last hour.
 
@@ -212,7 +260,18 @@ with DAG(
         trigger_rule="all_done",
     )
 
+    gold_completeness = PythonOperator(
+        task_id="check_gold_completeness",
+        python_callable=check_gold_completeness,
+    )
+
+    gold_reconciliation = PythonOperator(
+        task_id="check_gold_feature_reconciliation",
+        python_callable=check_gold_feature_reconciliation,
+    )
+
     # Dependencies
     run_dbt_tests >> write_dbt_results
-    [write_dbt_results, fs_completeness, fs_nulls] >> quality_gate
+    [write_dbt_results, fs_completeness, fs_nulls,
+     gold_completeness, gold_reconciliation] >> quality_gate
     quality_gate >> dq_complete >> audit

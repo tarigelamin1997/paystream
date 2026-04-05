@@ -68,3 +68,13 @@ ReplacingMergeTree provides eventual deduplication at read time, which is suffic
 - The DQ framework (Phase 7A) accounts for this: Bronze tests use `not_null` only, Silver tests use `severity:warn` for FK relationships
 - FastAPI does not use `FINAL` — acceptable because `ORDER BY valid_from DESC LIMIT 1` returns the correct latest row even with un-merged duplicates
 - Schema drift detection (Phase 7B) monitors for Avro schema evolution that would add fields not present in ClickHouse Bronze tables
+
+## FastAPI Query Pattern: ORDER BY DESC LIMIT 1 vs FINAL
+
+The Feature Store API uses `ORDER BY valid_from DESC LIMIT 1` instead of `FINAL` for single-user lookups. This is functionally equivalent because:
+
+1. **Single-user scope:** The query filters by `user_id = ?`, returning at most a few rows (one per snapshot)
+2. **ORDER BY DESC LIMIT 1** returns the most recent snapshot, which is the same row FINAL would return after deduplication
+3. **Performance:** Avoids the full-table merge that FINAL triggers on ReplacingMergeTree
+
+When `as_of` is provided, the query adds `WHERE valid_from <= ?` before the ORDER BY, returning the latest snapshot at or before the requested time — this is the point-in-time correctness guarantee.

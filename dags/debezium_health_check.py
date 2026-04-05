@@ -189,9 +189,31 @@ with DAG(
         op_kwargs={"connector_type": "mongo"},
     )
 
+    def _debezium_audit_log(**context):
+        """Custom audit that checks connector check results, not DAG state.
+
+        The default write_dag_audit_log reads dag_run.get_state() which is
+        'running' when this task executes (DAG hasn't finished yet), causing
+        every run to log 'failed'. Instead, check upstream task states.
+        """
+        dag_run = context["dag_run"]
+        ti_pg = dag_run.get_task_instance("check_debezium_pg")
+        ti_mongo = dag_run.get_task_instance("check_debezium_mongo")
+        pg_ok = ti_pg and ti_pg.state == "success"
+        mongo_ok = ti_mongo and ti_mongo.state == "success"
+        status = "success" if (pg_ok and mongo_ok) else "failed"
+        log_pipeline_event(
+            dag_id="debezium_health_check",
+            task_id="audit_log",
+            run_id=context["run_id"],
+            status=status,
+            details={"pg_task": ti_pg.state if ti_pg else "unknown",
+                     "mongo_task": ti_mongo.state if ti_mongo else "unknown"},
+        )
+
     audit = PythonOperator(
         task_id="write_audit_log",
-        python_callable=write_dag_audit_log,
+        python_callable=_debezium_audit_log,
         trigger_rule="all_done",
     )
 

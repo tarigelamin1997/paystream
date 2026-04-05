@@ -28,5 +28,19 @@ echo "Running dbt tests (target=dev → localhost:9000)..."
 cd dbt/
 dbt test --target dev 2>&1 | tee /tmp/dbt_test_output.txt
 
+# Write results to gold.dq_results via tunnel
+RESULT_LINE=$(grep -a "Done\. PASS=" /tmp/dbt_test_output.txt 2>/dev/null | sed 's/\x1b\[[0-9;]*m//g' || echo "")
+if [ -n "$RESULT_LINE" ]; then
+  PASS=$(echo "$RESULT_LINE" | sed 's/.*PASS=\([0-9]*\).*/\1/')
+  WARN=$(echo "$RESULT_LINE" | sed 's/.*WARN=\([0-9]*\).*/\1/')
+  ERROR=$(echo "$RESULT_LINE" | sed 's/.*ERROR=\([0-9]*\).*/\1/')
+  if [ "$ERROR" -gt 0 ]; then STATUS="fail"; elif [ "$WARN" -gt 0 ]; then STATUS="warn"; else STATUS="pass"; fi
+  curl -sf "http://localhost:8123/" --data-binary \
+    "INSERT INTO gold.dq_results VALUES (now64(3), 'dbt', 'dbt_test_suite_bastion', 'test_run', '${STATUS}', '{\"pass\":${PASS},\"warn\":${WARN},\"error\":${ERROR},\"source\":\"bastion_script\"}', ${PASS}, ${ERROR})"
+  echo "DQ result written: status=${STATUS} pass=${PASS} warn=${WARN} error=${ERROR}"
+else
+  echo "WARNING: Could not parse dbt output — DQ result not written"
+fi
+
 echo ""
 echo "=== Done ==="
