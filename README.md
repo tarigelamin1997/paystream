@@ -1,7 +1,5 @@
 # PayStream -- Real-Time BNPL Data Platform & Feature Store
 
-[Demo Video](https://youtube.com/watch?v=PLACEHOLDER)
-
 A production-grade, real-time data platform for Buy Now Pay Later (BNPL) operations. PayStream ingests transactional and behavioural data via CDC, transforms it through Bronze/Silver/Gold layers in ClickHouse, computes credit risk features, and serves them via a sub-50ms REST API.
 
 Built entirely on AWS managed services. Deployed and torn down with a single command.
