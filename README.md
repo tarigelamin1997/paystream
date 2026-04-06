@@ -51,7 +51,7 @@ Built entirely on AWS managed services. Deployed and torn down with a single com
 | Component | Service | Version |
 |---|---|---|
 | Transactional DB | RDS PostgreSQL | 15 |
-| Behavioural DB | Amazon DocumentDB | 5.0 |
+| Behavioural DB | Amazon DocumentDB | 6.0 |
 | Streaming | MSK Provisioned | Kafka 3.6.0 |
 | CDC | Debezium on ECS Fargate | 2.7.0 |
 | Schema Registry | Confluent on ECS Fargate | 7.6.1 |
@@ -124,7 +124,7 @@ If you stopped EC2 instances to save costs and are restarting:
    make post-restart
    ```
 
-This checks all 7 services and auto-restarts Debezium connector tasks if they failed during the shutdown. The most common issue is the Debezium PG connector losing its replication slot connection — the script handles this automatically. If RDS ran out of storage (WAL accumulation), the script provides the exact `aws rds modify-db-instance` command to expand it.
+This checks all services and auto-restarts Debezium connector tasks if they failed during the shutdown. The most common issue is the Debezium PG connector losing its replication slot connection — the script handles this automatically. If RDS ran out of storage (WAL accumulation), the script provides the exact `aws rds modify-db-instance` command to expand it.
 
 ### Individual Phase Commands
 
@@ -334,6 +334,28 @@ Six Grafana dashboards provisioned on self-hosted Grafana (ClickHouse EC2 port 3
 
 ---
 
+## Testing
+
+| Category | Count | Details |
+|----------|:-----:|---------|
+| pytest unit tests | 20 | 5 API, 5 circuit breaker, 5 Pydantic, 5 feature validation |
+| dbt data tests | 55 | 53 pass, 2 warn (7 Bronze PK + 30 Silver + 4 Gold + 9 contract + 5 pre-existing) |
+| Chaos scenarios | 5 | Corrupt timestamps, invalid features, circuit breaker, Debezium restart, schema drift |
+| CI gates | 4 | ruff lint, pytest, terraform validate, docker build |
+
+```bash
+# Run unit tests
+python -m pytest tests/ -v
+
+# Run dbt tests (via bastion SSH tunnel)
+./scripts/run_dbt_tests.sh
+
+# Run concurrent load test
+./scripts/load_test.sh 10 100
+```
+
+---
+
 ## Bug Log Summary
 
 15 bugs encountered and resolved across Phases 1-5. Full details in [`docs/bug_log.md`](docs/bug_log.md).
@@ -420,7 +442,7 @@ These items are documented but intentionally not built (scope control):
 3. **Blue/green deployments** -- ECS service with CodeDeploy for zero-downtime FastAPI updates
 4. **Feature Store versioning** -- MLflow or Feast integration for model-feature lineage
 5. **Data quality alerts** -- Great Expectations suite with PagerDuty integration
-6. **CI/CD pipeline** -- GitHub Actions for Terraform plan/apply, dbt test, API integration tests
+6. ~~**CI/CD pipeline**~~ -- **BUILT:** GitHub Actions with 4 gates (lint, test, terraform validate, docker build)
 7. **Secrets rotation** -- Automated rotation for RDS, DocumentDB, and SCRAM credentials
 8. **Backpressure handling** -- Kafka consumer lag-based autoscaling for Debezium ECS tasks
 
@@ -439,6 +461,8 @@ paystream/
   api/                    # FastAPI Feature Store API (ECS Fargate + ALB)
   dags/                   # 10 Airflow DAGs (synced to MWAA S3)
   grafana/                # 6 dashboards, 8 alert rules, datasources
+  tests/                  # 20 pytest unit tests (API, circuit breaker, Pydantic, validation)
+  .github/workflows/      # GitHub Actions CI (lint, test, terraform validate, docker build)
   stress_test/            # 8-wave stress test framework + SLO results
   contracts/              # 3 data contracts (Bronze->Silver, Silver->Gold, Gold->FS)
   migrations/             # 4 ClickHouse schema migration files
